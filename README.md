@@ -2,7 +2,7 @@
 
 A work in progress library for using RethinkDB with Julia
 
-With inspiration from https://github.com/hamiltop/rethinkdb-elixir 
+With inspiration from https://github.com/hamiltop/rethinkdb-elixir
 
 ## Sample API call
 
@@ -17,6 +17,11 @@ db_create("test_db") |> d -> exec(c, d) |> println
 db("test_db") |> d -> table_create(d, "test_table") |> d -> exec(c, d) |> println
 
 db("test_table") |> d -> table_drop("foo") |> d -> exec(c, d) |> println
+
+db("test_db") |>
+  d -> table(d, "test_table") |>
+  d -> insert(d, {"name" => "foo"}) |>
+  d -> exec(c, d) |> println
 
 # Or, if you prefer
 

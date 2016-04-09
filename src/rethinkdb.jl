@@ -83,25 +83,56 @@ end
 
 macro operate_on_single_arg(op_code::Int, name::Symbol)
   quote
-    function $(esc(name))(n)
+    function $(esc(name))(arg1)
       retval = []
       push!(retval, $(op_code))
 
       sub = []
-      push!(sub, n)
+      push!(sub, arg1)
 
       push!(retval, sub)
 
       retval
     end
 
-    function $(esc(name))(query, n)
+    function $(esc(name))(query, arg1)
       retval = []
       push!(retval, $(op_code))
 
       sub = []
       push!(sub, query)
-      push!(sub, n)
+      push!(sub, arg1)
+
+      push!(retval, sub)
+
+      retval
+    end
+  end
+end
+
+macro operate_on_two_args(op_code::Int, name::Symbol)
+  quote
+    function $(esc(name))(arg1, arg2)
+      retval = []
+      push!(retval, $(op_code))
+
+      sub = []
+      push!(sub, arg1)
+      push!(sub, arg2)
+
+      push!(retval, sub)
+
+      retval
+    end
+
+    function $(esc(name))(query, arg1, arg2)
+      retval = []
+      push!(retval, $(op_code))
+
+      sub = []
+      push!(sub, query)
+      push!(sub, arg1)
+      push!(sub, arg2)
 
       push!(retval, sub)
 
@@ -186,7 +217,13 @@ end
 # 53, update
 # 54, delete
 # 55, replace
-# 56, insert
+
+# Inserts into a table.  If `conflict` is replace, overwrites
+# entries with the same primary key.  If `conflict` is
+# update, does an update on the entry.  If `conflict` is
+# error, or is omitted, conflicts will trigger an error.
+# INSERT = 56; // Table, OBJECT, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT | Table, Sequence, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT
+@operate_on_two_args(56, insert)
 
 # Creates a database with a particular name.
 # DB_CREATE = 57; // STRING -> OBJECT
@@ -412,6 +449,11 @@ function do_test()
   db_create("test_db") |> d -> exec(c, d) |> println
   db("test_db") |> d -> table_create(d, "test_table") |> d -> exec(c, d) |> println
   #db("test_table") |> d -> table_drop("foo") |> d -> exec(c, d) |> println
+
+  db("test_db") |>
+    d -> table(d, "test_table") |>
+    d -> insert(d, {"name" => "foo"}) |>
+    d -> exec(c, d) |> println
 
   RethinkDB.disconnect(c)
 end
