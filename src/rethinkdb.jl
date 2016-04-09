@@ -55,10 +55,16 @@ function disconnect(conn::RethinkDBConnection)
   close(conn.socket)
 end
 
+# Have to do the funky push! on arrays due to
+# the deprecated [] auto-concatenation still
+# enabled in Julia 0.4
+
 macro operate_on_zero_args(op_code::Int, name::Symbol)
   quote
     function $(esc(name))()
-      [ $(op_code)  ]
+      retval = []
+      push!(retval, $(op_code))
+      retval
     end
   end
 end
@@ -66,13 +72,28 @@ end
 macro operate_on_single_arg(op_code::Int, name::Symbol)
   quote
     function $(esc(name))(n)
-      [ $(op_code), Array[[n]] ]
+      retval = []
+      push!(retval, $(op_code))
+
+      sub = []
+      push!(sub, n)
+
+      push!(retval, sub)
+
+      retval
     end
 
-    # [15, [[14, ["db"]], "table"]]
-
     function $(esc(name))(query, n)
-      [ $(op_code), Array[query], Array[[ n ]] ]
+      retval = []
+      push!(retval, $(op_code))
+
+      sub = []
+      push!(sub, query)
+      push!(sub, n)
+
+      push!(retval, sub)
+
+      retval
     end
   end
 end
@@ -83,9 +104,11 @@ end
 @operate_on_single_arg(57, db_create)
 @operate_on_single_arg(58, db_drop)
 @operate_on_zero_args(59, db_list)
+@operate_on_single_arg(60, table_create)
+@operate_on_single_arg(61, table_drop)
 
 function exec(conn::RethinkDBConnection, q)
-  j = JSON.json([1, Array[q]])
+  j = JSON.json([1 ; Array[q]])
   send_command(conn, j)
 end
 
@@ -119,12 +142,13 @@ end
 function do_test()
   c = RethinkDB.connect()
 
-  db_create("tester") |> d -> exec(c, d) |> println
-  db_drop("tester") |> d -> exec(c, d) |> println
-  db_list() |> d -> exec(c, d) |> println
+  #db_create("tester") |> d -> exec(c, d) |> println
+  #db_drop("tester") |> d -> exec(c, d) |> println
+  #db_list() |> d -> exec(c, d) |> println
 
-
-  # db("dbname") |> table("tablename") |> get("keyname") |> run(c)
+  db_create("test_db") |> d -> exec(c, d) |> println
+  db("test_db") |> d -> table_create(d, "test_table") |> d -> exec(c, d) |> println
+  #db("test_table") |> d -> table_drop("foo") |> d -> exec(c, d) |> println
 
   RethinkDB.disconnect(c)
 end
