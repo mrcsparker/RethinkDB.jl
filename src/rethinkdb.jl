@@ -6,8 +6,11 @@ type RethinkDBConnection
   socket :: Base.TCPSocket
 end
 
+# TODO: handle error is not connected or incorrect handshake
 function connect(server::AbstractString = "localhost", port::Int = 28015)
-  RethinkDBConnection(Base.connect(server, port))
+  c = RethinkDBConnection(Base.connect(server, port))
+  handshake(c)
+  c
 end
 
 function handshake(conn::RethinkDBConnection)
@@ -73,7 +76,7 @@ end
 @operate_on_zero_args(59, db_list)
 
 function exec(conn::RethinkDBConnection, q)
-  j = JSON.json([1, q])
+  j = JSON.json([1, Array[q]])
   send_command(conn, j)
 end
 
@@ -106,8 +109,6 @@ end
 
 function do_test()
   c = RethinkDB.connect()
-  res = RethinkDB.handshake(c)
-  res ? println("Connected") : println("Not connected")
 
   db_create("tester") |> d -> exec(c, d) |> println
   db_drop("tester") |> d -> exec(c, d) |> println
