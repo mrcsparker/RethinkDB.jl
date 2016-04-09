@@ -97,7 +97,7 @@ function do_test()
   #db_list() |> d -> exec(c, d) |> println
 
   #db_create("test_db") |> d -> exec(c, d) |> println
-  db("test_db") |> d -> table_create(d, "test_table") |> d -> exec(c, d) |> println
+  #db("test_db") |> d -> table_create(d, "test_table") |> d -> exec(c, d) |> println
   #db("test_table") |> d -> table_drop("foo") |> d -> exec(c, d) |> println
 
   #db("test_db") |>
@@ -105,10 +105,20 @@ function do_test()
   #  d -> insert(d, { "status" => "open", "item" => [{"name" => "foo", "amount" => "22"}] }) |>
   #  d -> exec(c, d) |> println
 
+  db("test_db") |>
+    d -> table(d, "test_table") |>
+    d -> filter(d, { "status" => "open"}) |>
+    d -> skip(d, 3) |>
+    d -> has_fields(d, "xxx") |>
+    d -> exec(c, d) |> println
+
+  #now() |>
+  #  d -> date(d) |>
+  #  d -> exec(c, d) |> println
+
   #db("test_db") |>
   #  d -> table(d, "test_table") |>
-  #  d -> filter(d, { "status" => "open"}) |>
-  #  d -> exec(c, d) |> println
+  #  sync |> println
 
   RethinkDB.disconnect(c)
 end

@@ -11,10 +11,12 @@ include("query_macros.jl")
 # clients provide variable names as strings to discourage
 # variable-capturing client libraries, and because it's more efficient
 # VAR = 10; // !NUMBER -> DATUM
+@rqlgen_string(10, var)
 
 # Takes some javascript code and executes it.
 # JAVASCRIPT = 11; // STRING {timeout: !NUMBER} -> DATUM |
 #                  // STRING {timeout: !NUMBER} -> Function(*)
+@rqlgen_string(11, javascript)
 
 # Takes a string and throws an error with that message.
 # Inside of a `default` block, you can omit the first
@@ -40,8 +42,8 @@ include("query_macros.jl")
 # Gets a single element from a table by its primary or a secondary key.
 # GET = 16; // Table, STRING -> SingleSelection | Table, NUMBER -> SingleSelection |
 #           // Table, STRING -> NULL            | Table, NUMBER -> NULL |
-@rqlgen_rql_string(16, table)
-@rqlgen_rql_number(16, table)
+@rqlgen_rql_string(16, get)
+@rqlgen_rql_number(16, get)
 
 # EQ = 17; // DATUM... -> BOOL
 
@@ -82,10 +84,13 @@ include("query_macros.jl")
 # or filters a sequence so that all objects inside of it
 # contain all the specified fields.
 # HAS_FIELDS = 32; // OBJECT, Pathspec... -> BOOL
+@rqlgen_rql_string(32, has_fields)
+@rqlgen_rql_number(32, has_fields)
 
 # Get a subset of an object by selecting some attributes to preserve,
 # or map that over a sequence.  (Both pick and pluck, polymorphic.)
 # PLUCK = 33; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
+@rqlgen_rql_string(33, pluck)
 
 # Get a subset of an object by selecting some attributes to discard, or
 # map that over a sequence.  (Both unpick and without, polymorphic.)
@@ -116,7 +121,7 @@ include("query_macros.jl")
 # did not exist.
 # FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
 #              // Sequence, OBJECT, {default:DATUM} -> Sequence
-@operate_on_single_arg(39, filter)
+@rqlgen_rql_object(39, filter)
 
 # Map a function over a sequence and then concatenate the results together.
 # CONCAT_MAP = 40; // Sequence, Function(1) -> Sequence
@@ -126,17 +131,19 @@ include("query_macros.jl")
 
 # Get all distinct elements of a sequence (like `uniq`).
 # DISTINCT = 42; // Sequence -> Sequence
-@operate_on_single_arg(42, distinct)
+@rqlgen_rql(42, distinct)
 
 # Count the number of elements in a sequence, or only the elements that match
 # a given filter.
 # COUNT = 43; // Sequence -> NUMBER | Sequence, DATUM -> NUMBER | Sequence, Function(1) -> NUMBER
+@rqlgen_rql(43, count)
 
 # Take the union of multiple sequences (preserves duplicate elements! (use distinct)).
 # UNION = 44; // Sequence... -> Sequence
 
 # Get the Nth element of a sequence.
 # NTH = 45; // Sequence, NUMBER -> DATUM
+@rqlgen_rql_number(45, nth)
 
 # // OBSOLETE_GROUPED_MAPREDUCE = 46;
 
@@ -239,10 +246,13 @@ include("query_macros.jl")
 # FUNC = 69; // ARRAY, Top -> ARRAY -> Top
 
 # SKIP = 70; // Sequence, NUMBER -> Sequence
+@rqlgen_rql_number(70, skip)
 
 # LIMIT = 71; // Sequence, NUMBER -> Sequence
+@rqlgen_rql_number(71, limit)
 
 # ZIP = 72; // Sequence -> Sequence
+@rqlgen_rql(72, zip)
 
 # Indicates to ORDER_BY that this attribute is to be sorted in ascending order.
 # ASC = 73; // !STRING -> Ordering
@@ -252,6 +262,7 @@ include("query_macros.jl")
 
 # Creates a new secondary index with a particular name and definition.
 # INDEX_CREATE = 75; // Table, STRING, Function(1), {multi:BOOL} -> OBJECT
+@rqlgen_rql_string(75, index_create)
 
 # Drops a secondary index with a particular name from the specified table.
 # INDEX_DROP = 76; // Table, STRING -> OBJECT
@@ -346,7 +357,7 @@ include("query_macros.jl")
 
 # The time the query was received by the server.
 # NOW = 103; // -> PSEUDOTYPE(TIME)
-@rqlgen_rql(103, now)
+@rqlgen_root(103, now)
 
 # Puts a time into an ISO 8601 timezone.
 # IN_TIMEZONE = 104; // PSEUDOTYPE(TIME), STRING -> PSEUDOTYPE(TIME)
@@ -441,6 +452,7 @@ include("query_macros.jl")
 # Ensures that previously issued soft-durability writes are complete and
 # written to disk.
 # SYNC = 138; // Table -> OBJECT
+@rqlgen_rql(138, sync)
 
 # Gets information about whether or not a set of indexes are ready to
 # be accessed. Returns a list of objects that look like this:
