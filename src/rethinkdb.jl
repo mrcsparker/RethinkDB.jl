@@ -90,7 +90,9 @@ function read_response(conn::RethinkDBConnection, token)
 end
 
 function do_test()
-  c = RethinkDB.connect()
+  r = RethinkDB
+
+  c = r.connect()
 
   #db_create("tester") |> d -> exec(c, d) |> println
   #db_drop("tester") |> d -> exec(c, d) |> println
@@ -105,12 +107,12 @@ function do_test()
   #  d -> insert(d, { "status" => "open", "item" => [{"name" => "foo", "amount" => "22"}] }) |>
   #  d -> exec(c, d) |> println
 
-  db("test_db") |>
-    d -> table(d, "test_table") |>
-    d -> filter(d, { "status" => "open"}) |>
-    d -> skip(d, 3) |>
-    d -> has_fields(d, "xxx") |>
-    d -> exec(c, d) |> println
+  r.db("test_db") |>
+    d -> r.table(d, "test_table") |>
+    d -> r.filter(d, { "status" => "open"}) |>
+    d -> r.skip(d, 3) |>
+    d -> r.has_fields(d, "xxx") |>
+    d -> r.exec(c, d) |> println
 
   #now() |>
   #  d -> date(d) |>
@@ -120,7 +122,12 @@ function do_test()
   #  d -> table(d, "test_table") |>
   #  sync |> println
 
-  RethinkDB.disconnect(c)
+  r.db("test_db") |>
+    d -> r.table(d, "test_table") |>
+    d -> r.filter(d, r.js("(function(s) { return s.status === 'open'; })")) |>
+    d -> r.exec(c, d) |> println
+
+  r.disconnect(c)
 end
 
 end

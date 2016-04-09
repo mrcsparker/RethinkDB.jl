@@ -110,3 +110,20 @@ macro rqlgen_rql_object(op_code::Int, name::Symbol)
     end
   end
 end
+
+macro rqlgen_rql_rql(op_code::Int, name::Symbol)
+  quote
+    function $(esc(name))(t_rql_1::RQL, t_rql_2::RQL)
+      local retval = []
+      push!(retval, $(op_code))
+
+      local sub = []
+      push!(sub, t_rql_1.query)
+      push!(sub, t_rql_2.query)
+
+      push!(retval, sub)
+
+      RQL(retval)
+    end
+  end
+end

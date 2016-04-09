@@ -39,6 +39,12 @@ r.db("test_db") |>
   d -> r.count(d) |>
   d -> exec(c, d) |> println
 
+# Add a little js
+r.db("test_db") |>
+  d -> r.table(d, "test_table") |>
+  d -> r.filter(d, r.js("(function(s) { return s.status === 'open'; })")) |>
+  d -> r.exec(c, d) |> println
+
 r.now() |>
   d -> r.date(d) |>
   d -> r.exec(c, d) |> println

@@ -17,6 +17,7 @@ include("query_macros.jl")
 # JAVASCRIPT = 11; // STRING {timeout: !NUMBER} -> DATUM |
 #                  // STRING {timeout: !NUMBER} -> Function(*)
 @rqlgen_string(11, javascript)
+@rqlgen_string(11, js)
 
 # Takes a string and throws an error with that message.
 # Inside of a `default` block, you can omit the first
@@ -121,6 +122,7 @@ include("query_macros.jl")
 # did not exist.
 # FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
 #              // Sequence, OBJECT, {default:DATUM} -> Sequence
+@rqlgen_rql_rql(39, filter)
 @rqlgen_rql_object(39, filter)
 
 # Map a function over a sequence and then concatenate the results together.
