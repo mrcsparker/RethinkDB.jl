@@ -172,9 +172,11 @@ include("query_macros.jl")
 #              // SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
 #              // StreamSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
 #              // SingleSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
+@rqlgen_rql_object(53, update)
 
 # Deletes all the rows in a selection.
 # DELETE = 54; // StreamSelection, {durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection -> OBJECT
+@rqlgen_rql(54, delete)
 
 # Replaces all the rows in a selection.  Calls its Function with the row
 # to be replaced, and then discards it and stores the result of that
@@ -493,3 +495,9 @@ include("query_macros.jl")
 # TO_GEOJSON = 158; // PSEUDOTYPE(GEOMETRY) -> OBJECT
 
 # FILL = 167; // PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)
+
+# Returns the row in the `rethinkdb.table_config` or `rethinkdb.db_config` table
+# that corresponds to the given database or table.
+# CONFIG  = 174; // Database -> SingleSelection
+#                // Table -> SingleSelection
+@rqlgen_rql(174, config)

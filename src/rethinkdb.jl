@@ -127,6 +127,9 @@ function do_test()
     d -> r.filter(d, r.js("(function(s) { return s.status === 'open'; })")) |>
     d -> r.exec(c, d) |> println
 
+  r.db("test_db") |>
+    d -> r.config(d) |> println
+
   r.disconnect(c)
 end
 
