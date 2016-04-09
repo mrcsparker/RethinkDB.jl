@@ -59,6 +59,22 @@ end
 # the deprecated [] auto-concatenation still
 # enabled in Julia 0.4
 
+function wrap(term)
+  if ismatch(r"^Dict", string(typeof(term)))
+    for k in Base.keys(term)
+      term[k] = wrap(term[k])
+    end
+  end
+
+  if ismatch(r"^Array", string(typeof(term)))
+    p = []
+    push!(p, 2)
+    push!(p, term)
+    return p
+  end
+  term
+end
+
 macro operate_on_zero_args(op_code::Int, name::Symbol)
   quote
     function $(esc(name))()
@@ -84,11 +100,11 @@ end
 macro operate_on_single_arg(op_code::Int, name::Symbol)
   quote
     function $(esc(name))(arg1)
-      retval = []
+      local retval = []
       push!(retval, $(op_code))
 
-      sub = []
-      push!(sub, arg1)
+      local sub = []
+      push!(sub, wrap(arg1))
 
       push!(retval, sub)
 
@@ -101,7 +117,7 @@ macro operate_on_single_arg(op_code::Int, name::Symbol)
 
       sub = []
       push!(sub, query)
-      push!(sub, arg1)
+      push!(sub, wrap(arg1))
 
       push!(retval, sub)
 
@@ -117,8 +133,8 @@ macro operate_on_two_args(op_code::Int, name::Symbol)
       push!(retval, $(op_code))
 
       sub = []
-      push!(sub, arg1)
-      push!(sub, arg2)
+      push!(sub, wrap(arg1))
+      push!(sub, wrap(arg2))
 
       push!(retval, sub)
 
@@ -131,8 +147,8 @@ macro operate_on_two_args(op_code::Int, name::Symbol)
 
       sub = []
       push!(sub, query)
-      push!(sub, arg1)
-      push!(sub, arg2)
+      push!(sub, wrap(arg1))
+      push!(sub, wrap(arg2))
 
       push!(retval, sub)
 
@@ -214,8 +230,18 @@ end
 # TYPE_OF = 52; // Top -> STRING
 @operate_on_single_arg(52, type_of)
 
-# 53, update
-# 54, delete
+# Updates all the rows in a selection.  Calls its Function with the row
+# to be updated, and then merges the result of that call.
+# UPDATE = 53; // StreamSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
+#              // SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
+#              // StreamSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
+#              // SingleSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
+@operate_on_two_args(53, update)
+
+# Deletes all the rows in a selection.
+# DELETE = 54; // StreamSelection, {durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection -> OBJECT
+@operate_on_single_arg(54, delete)
+
 # 55, replace
 
 # Inserts into a table.  If `conflict` is replace, overwrites
@@ -223,7 +249,7 @@ end
 # update, does an update on the entry.  If `conflict` is
 # error, or is omitted, conflicts will trigger an error.
 # INSERT = 56; // Table, OBJECT, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT | Table, Sequence, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT
-@operate_on_two_args(56, insert)
+@operate_on_single_arg(56, insert)
 
 # Creates a database with a particular name.
 # DB_CREATE = 57; // STRING -> OBJECT
@@ -452,7 +478,7 @@ function do_test()
 
   db("test_db") |>
     d -> table(d, "test_table") |>
-    d -> insert(d, {"name" => "foo"}) |>
+    d -> insert(d, { "item" => [{"name" => "foo", "amount" => "22"}] }) |>
     d -> exec(c, d) |> println
 
   RethinkDB.disconnect(c)
