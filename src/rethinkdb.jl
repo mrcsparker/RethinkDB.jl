@@ -66,6 +66,18 @@ macro operate_on_zero_args(op_code::Int, name::Symbol)
       push!(retval, $(op_code))
       retval
     end
+
+    function $(esc(name))(query)
+      retval = []
+      push!(retval, $(op_code))
+
+      sub = []
+      push!(sub, query)
+
+      push!(retval, sub)
+
+      retval
+    end
   end
 end
 
@@ -98,14 +110,75 @@ macro operate_on_single_arg(op_code::Int, name::Symbol)
   end
 end
 
+# 10, var
+# 11, javascript
+@operate_on_single_arg(11, js)
+@operate_on_single_arg(12, error)
+# 13, implicit_var
 @operate_on_single_arg(14, db)
 @operate_on_single_arg(15, table)
-
+# 16, get
+# 17, eq
+# 18, ne
+# 19, lt
+# 20, le
+# 21, gt
+# 22, ge
+@operate_on_single_arg(23, not)
+# 24, add
+# 25, sub
+# 26, mul
+# 27, div
+# 28, mod
+# 29, append
+# 30, slice
+# 31, get_field
+# 32, has_fields
+# 33, pluck
+# 34, without
+# 35, merge
+# 36, na
+# 37, reduce
+# 38, map
+# 39, filter
+# 40, concat_map
+# 41, order_by
+@operate_on_single_arg(42, distinct)
+# 43, count
+# 44, union
+# 45, nth
+# 46, na
+# 47, na
+# 48, inner_join
+# 49, outer_join
+# 50, eq_join
+# 51, coerce_to
+@operate_on_single_arg(52, type_of)
+# 53, update
+# 54, delete
+# 55, replace
+# 56, insert
 @operate_on_single_arg(57, db_create)
 @operate_on_single_arg(58, db_drop)
 @operate_on_zero_args(59, db_list)
 @operate_on_single_arg(60, table_create)
 @operate_on_single_arg(61, table_drop)
+@operate_on_single_arg(79, info)
+@operate_on_single_arg(98, json)
+@operate_on_single_arg(141, upcase)
+@operate_on_single_arg(142, downcase)
+# 149, split
+@operate_on_single_arg(150, ungroup)
+# 151, random
+@operate_on_single_arg(153, http)
+@operate_on_single_arg(154, args)
+@operate_on_single_arg(157, geojson)
+@operate_on_single_arg(158, to_geojson)
+@operate_on_single_arg(167, fill)
+@operate_on_single_arg(172, to_json)
+@operate_on_single_arg(183, floor)
+@operate_on_single_arg(184, ceil)
+@operate_on_single_arg(185, round)
 
 function exec(conn::RethinkDBConnection, q)
   j = JSON.json([1 ; Array[q]])

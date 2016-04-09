@@ -2,6 +2,8 @@
 
 A work in progress library for using RethinkDB with Julia
 
+With inspiration from https://github.com/hamiltop/rethinkdb-elixir 
+
 ## Sample API call
 
 ```julia
