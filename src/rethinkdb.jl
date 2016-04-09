@@ -68,8 +68,17 @@ macro operate_on_single_arg(op_code::Int, name::Symbol)
     function $(esc(name))(n)
       [ $(op_code), Array[[n]] ]
     end
+
+    # [15, [[14, ["db"]], "table"]]
+
+    function $(esc(name))(query, n)
+      [ $(op_code), Array[query], Array[[ n ]] ]
+    end
   end
 end
+
+@operate_on_single_arg(14, db)
+@operate_on_single_arg(15, table)
 
 @operate_on_single_arg(57, db_create)
 @operate_on_single_arg(58, db_drop)
