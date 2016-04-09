@@ -208,7 +208,18 @@ end
 # 36, na
 # 37, reduce
 # 38, map
-# 39, filter
+
+# Filter a sequence with either a function or a shortcut
+# object (see API docs for details).  The body of FILTER is
+# wrapped in an implicit `.default(false)`, and you can
+# change the default value by specifying the `default`
+# optarg.  If you make the default `r.error`, all errors
+# caught by `default` will be rethrown as if the `default`
+# did not exist.
+# FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
+#              // Sequence, OBJECT, {default:DATUM} -> Sequence
+@operate_on_single_arg(39, filter)
+
 # 40, concat_map
 # 41, order_by
 
@@ -478,7 +489,12 @@ function do_test()
 
   db("test_db") |>
     d -> table(d, "test_table") |>
-    d -> insert(d, { "item" => [{"name" => "foo", "amount" => "22"}] }) |>
+    d -> insert(d, { "status" => "open", "item" => [{"name" => "foo", "amount" => "22"}] }) |>
+    d -> exec(c, d) |> println
+
+  db("test_db") |>
+    d -> table(d, "test_table") |>
+    d -> filter(d, { "status" => "open"}) |>
     d -> exec(c, d) |> println
 
   RethinkDB.disconnect(c)
