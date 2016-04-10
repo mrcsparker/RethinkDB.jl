@@ -2,128 +2,114 @@
 # the deprecated [] auto-concatenation still
 # enabled in Julia 0.4
 
-function wrap(term)
-  if ismatch(r"^Dict", string(typeof(term)))
-    for k in Base.keys(term)
-      term[k] = wrap(term[k])
+include("types.jl")
+
+function wrap_reql_object(o)
+  if ismatch(r"^Dict", string(typeof(o)))
+    for k in Base.keys(o)
+      o[k] = wrap_reql_object(o[k])
     end
   end
 
-  if ismatch(r"^Array", string(typeof(term)))
+  if ismatch(r"^Array", string(typeof(o)))
     p = []
     push!(p, 2)
-    push!(p, term)
+    push!(p, o)
     return p
   end
-  term
+  o
 end
 
-macro rqlgen_root(op_code::Int, name::Symbol)
+macro reql_zero(op_code::Int, name::Symbol)
   quote
     function $(esc(name))()
       local retval = []
-      push!(retval, $(op_code))
-      RQL(retval)
+      push!(retval, $op_code)
+      ReqlTerm(retval)
     end
   end
 end
 
-macro rqlgen_string(op_code::Int, name::Symbol)
+macro reql_one(op_code::Int, name::Symbol, T1)
   quote
-    function $(esc(name))(t_string_1::AbstractString)
+    function $(esc(name))(arg1::$T1)
       local retval = []
-      push!(retval, $(op_code))
+      push!(retval, $op_code)
 
       local sub = []
-      push!(sub, t_string_1)
+      push!(sub, arg1)
 
       push!(retval, sub)
 
-      RQL(retval)
+      ReqlTerm(retval)
     end
   end
 end
 
-macro rqlgen_rql_string(op_code::Int, name::Symbol)
+macro reql_onearr(op_code::Int, name::Symbol, T1)
   quote
-    function $(esc(name))(t_rql_1::RQL, t_string_2::AbstractString)
+    function $(esc(name))(arg1::$T1...)
       local retval = []
-      push!(retval, $(op_code))
+      push!(retval, $op_code)
 
       local sub = []
-      push!(sub, t_rql_1.query)
-      push!(sub, t_string_2)
+      for i in arg1
+        push!(sub, i)
+      end
 
       push!(retval, sub)
 
-      RQL(retval)
+      ReqlTerm(retval)
     end
   end
 end
 
-macro rqlgen_rql_number(op_code::Int, name::Symbol)
+macro reql_two(op_code::Int, name::Symbol, T1, T2)
   quote
-    function $(esc(name))(t_rql_1::RQL, t_number_2::Int64)
+    function $(esc(name))(arg1::$T1, arg2::$T2)
       local retval = []
-      push!(retval, $(op_code))
+      push!(retval, $op_code)
 
       local sub = []
-      push!(sub, t_rql_1.query)
-      push!(sub, t_number_2)
+      push!(sub, arg1)
+      push!(sub, arg2)
 
       push!(retval, sub)
 
-      RQL(retval)
+      ReqlTerm(retval)
     end
   end
 end
 
-macro rqlgen_rql(op_code::Int, name::Symbol)
+macro reql_object(op_code::Int, name::Symbol)
   quote
-    function $(esc(name))(t_rql_1::RQL)
+    function $(esc(name))(object)
       local retval = []
       push!(retval, $(op_code))
 
       local sub = []
-      push!(sub, t_rql_1.query)
+      push!(sub, wrap_reql_object(object))
 
       push!(retval, sub)
 
-      RQL(retval)
+      ReqlTerm(retval)
     end
   end
 end
 
-macro rqlgen_rql_object(op_code::Int, name::Symbol)
+macro reql_term_object(op_code::Int, name::Symbol)
   quote
-    function $(esc(name))(t_rql_1::RQL, t_object_2)
+    function $(esc(name))(term::ReqlTerm, object)
       local retval = []
       push!(retval, $(op_code))
 
       local sub = []
-      push!(sub, t_rql_1.query)
-      push!(sub, wrap(t_object_2))
+      push!(sub, term)
+      push!(sub, wrap_reql_object(object))
 
       push!(retval, sub)
 
-      RQL(retval)
-    end
-  end
-end
-
-macro rqlgen_rql_rql(op_code::Int, name::Symbol)
-  quote
-    function $(esc(name))(t_rql_1::RQL, t_rql_2::RQL)
-      local retval = []
-      push!(retval, $(op_code))
-
-      local sub = []
-      push!(sub, t_rql_1.query)
-      push!(sub, t_rql_2.query)
-
-      push!(retval, sub)
-
-      RQL(retval)
+      ReqlTerm(retval)
     end
   end
 end

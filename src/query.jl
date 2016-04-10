@@ -1,6 +1,3 @@
-type RQL
-  query
-end
 
 include("query_macros.jl")
 
@@ -11,68 +8,84 @@ include("query_macros.jl")
 # clients provide variable names as strings to discourage
 # variable-capturing client libraries, and because it's more efficient
 # VAR = 10; // !NUMBER -> DATUM
-@rqlgen_string(10, var)
+@reql_one(10, var, ReqlString)
 
 # Takes some javascript code and executes it.
 # JAVASCRIPT = 11; // STRING {timeout: !NUMBER} -> DATUM |
 #                  // STRING {timeout: !NUMBER} -> Function(*)
-@rqlgen_string(11, javascript)
-@rqlgen_string(11, js)
+@reql_one(11, javascript, ReqlString)
+@reql_one(11, js, ReqlString)
 
 # Takes a string and throws an error with that message.
 # Inside of a `default` block, you can omit the first
 # argument to rethrow whatever error you catch (this is most
 # useful as an argument to the `default` filter optarg).
 # ERROR = 12; // STRING -> Error | -> Error
-@rqlgen_string(12, error)
+@reql_one(12, error, ReqlString)
 
 # Takes nothing and returns a reference to the implicit variable.
 # IMPLICIT_VAR = 13; // -> DATUM
-@rqlgen_root(14, implicit_var)
+@reql_zero(14, implicit_var)
 
 # Returns a reference to a database.
 # DB = 14; // STRING -> Database
-@rqlgen_string(14, db)
+#@reql_string(14, db)
+@reql_one(14, db, ReqlString)
 
 # Returns a reference to a table.
 # TABLE = 15; // Database, STRING, {read_mode:STRING, identifier_format:STRING} -> Table
 #             // STRING, {read_mode:STRING, identifier_format:STRING} -> Table
-@rqlgen_rql_string(15, table)
-@rqlgen_string(15, table)
+@reql_two(15, table, ReqlTerm, ReqlString)
+@reql_one(15, table, ReqlString)
 
 # Gets a single element from a table by its primary or a secondary key.
 # GET = 16; // Table, STRING -> SingleSelection | Table, NUMBER -> SingleSelection |
 #           // Table, STRING -> NULL            | Table, NUMBER -> NULL |
-@rqlgen_rql_string(16, get)
-@rqlgen_rql_number(16, get)
+@reql_two(16, get, ReqlTerm, ReqlString)
+@reql_two(16, get, ReqlTerm, ReqlString)
 
 # EQ = 17; // DATUM... -> BOOL
+#@reql_datumarray(17, eq)
+@reql_onearr(17, eq, ReqlDatum)
 
 # NE = 18; // DATUM... -> BOOL
+@reql_onearr(18, ne, ReqlDatum)
 
 # LT = 19; // DATUM... -> BOOL
+@reql_onearr(19, lt, ReqlDatum)
 
 # LE = 20; // DATUM... -> BOOL
+@reql_onearr(20, le, ReqlDatum)
 
 # GT = 21; // DATUM... -> BOOL
+@reql_onearr(21, gt, ReqlDatum)
 
 # GE = 22; // DATUM... -> BOOL
+@reql_onearr(22, ge, ReqlDatum)
 
 # NOT = 23; // BOOL -> BOOL
+@reql_one(23, not, ReqlBool)
 
 # ADD can either add two numbers or concatenate two arrays.
 # ADD = 24; // NUMBER... -> NUMBER | STRING... -> STRING
+@reql_onearr(24, add, ReqlString)
+#@reql_onearr(24, add, ReqlNumber)
 
 # SUB = 25; // NUMBER... -> NUMBER
+@reql_onearr(25, sub, ReqlNumber)
 
 # MUL = 26; // NUMBER... -> NUMBER
+@reql_onearr(26, mul, ReqlNumber)
 
 # DIV = 27; // NUMBER... -> NUMBER
+@reql_onearr(27, div, ReqlNumber)
 
 # MOD = 28; // NUMBER, NUMBER -> NUMBER
+@reql_two(28, mod, ReqlNumber, ReqlNumber)
 
 # Append a single element to the end of an array (like `snoc`).
 # APPEND = 29; // ARRAY, DATUM -> ARRAY
+@reql_two(29, append, ReqlArray, ReqlDatum)
 
 # SLICE = 30; // Sequence, NUMBER, NUMBER -> Sequence
 
@@ -85,13 +98,13 @@ include("query_macros.jl")
 # or filters a sequence so that all objects inside of it
 # contain all the specified fields.
 # HAS_FIELDS = 32; // OBJECT, Pathspec... -> BOOL
-@rqlgen_rql_string(32, has_fields)
-@rqlgen_rql_number(32, has_fields)
+@reql_two(32, has_fields, ReqlTerm, ReqlString)
+@reql_two(32, has_fields, ReqlTerm, ReqlNumber)
 
 # Get a subset of an object by selecting some attributes to preserve,
 # or map that over a sequence.  (Both pick and pluck, polymorphic.)
 # PLUCK = 33; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
-@rqlgen_rql_string(33, pluck)
+@reql_two(33, pluck, ReqlTerm, ReqlString)
 
 # Get a subset of an object by selecting some attributes to discard, or
 # map that over a sequence.  (Both unpick and without, polymorphic.)
@@ -122,8 +135,8 @@ include("query_macros.jl")
 # did not exist.
 # FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
 #              // Sequence, OBJECT, {default:DATUM} -> Sequence
-@rqlgen_rql_rql(39, filter)
-@rqlgen_rql_object(39, filter)
+@reql_two(39, filter, ReqlTerm, ReqlTerm)
+@reql_term_object(39, filter)
 
 # Map a function over a sequence and then concatenate the results together.
 # CONCAT_MAP = 40; // Sequence, Function(1) -> Sequence
@@ -133,19 +146,19 @@ include("query_macros.jl")
 
 # Get all distinct elements of a sequence (like `uniq`).
 # DISTINCT = 42; // Sequence -> Sequence
-@rqlgen_rql(42, distinct)
+@reql_one(42, distinct, ReqlTerm)
 
 # Count the number of elements in a sequence, or only the elements that match
 # a given filter.
 # COUNT = 43; // Sequence -> NUMBER | Sequence, DATUM -> NUMBER | Sequence, Function(1) -> NUMBER
-@rqlgen_rql(43, count)
+@reql_one(43, count, ReqlTerm)
 
 # Take the union of multiple sequences (preserves duplicate elements! (use distinct)).
 # UNION = 44; // Sequence... -> Sequence
 
 # Get the Nth element of a sequence.
 # NTH = 45; // Sequence, NUMBER -> DATUM
-@rqlgen_rql_number(45, nth)
+@reql_two(45, nth, ReqlTerm, ReqlNumber)
 
 # // OBSOLETE_GROUPED_MAPREDUCE = 46;
 
@@ -172,11 +185,11 @@ include("query_macros.jl")
 #              // SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
 #              // StreamSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
 #              // SingleSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
-@rqlgen_rql_object(53, update)
+@reql_term_object(53, update)
 
 # Deletes all the rows in a selection.
 # DELETE = 54; // StreamSelection, {durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection -> OBJECT
-@rqlgen_rql(54, delete)
+@reql_one(54, delete, ReqlTerm)
 
 # Replaces all the rows in a selection.  Calls its Function with the row
 # to be replaced, and then discards it and stores the result of that
@@ -188,19 +201,19 @@ include("query_macros.jl")
 # update, does an update on the entry.  If `conflict` is
 # error, or is omitted, conflicts will trigger an error.
 # INSERT = 56; // Table, OBJECT, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT | Table, Sequence, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT
-@rqlgen_rql_object(56, insert)
+@reql_term_object(56, insert)
 
 # Creates a database with a particular name.
 # DB_CREATE = 57; // STRING -> OBJECT
-@rqlgen_string(57, db_create)
+@reql_one(57, db_create, ReqlString)
 
 # Drops a database with a particular name.
 # DB_DROP = 58; // STRING -> OBJECT
-@rqlgen_string(58, db_drop)
+@reql_one(58, db_drop, ReqlString)
 
 # Lists all the databases by name.  (Takes no arguments)
 # DB_LIST = 59; // -> ARRAY
-@rqlgen_root(59, db_list)
+@reql_zero(59, db_list)
 
 # Creates a table with a particular name in a particular
 # database.  (You may omit the first argument to use the
@@ -209,23 +222,23 @@ include("query_macros.jl")
 #                    // Database, STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
 #                    // STRING, {primary_key:STRING, shards:NUMBER, replicas:NUMBER, primary_replica_tag:STRING} -> OBJECT
 #                    // STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
-@rqlgen_rql_string(60, table_create)
-@rqlgen_string(60, table_create)
+@reql_two(60, table_create, ReqlTerm, ReqlString)
+@reql_one(60, table_create, ReqlString)
 
 # Drops a table with a particular name from a particular
 # database.  (You may omit the first argument to use the
 # default database.)
 # TABLE_DROP = 61; // Database, STRING -> OBJECT
 #                  // STRING -> OBJECT
-@rqlgen_rql_string(61, table_drop)
-@rqlgen_string(61, table_drop)
+@reql_two(61, table_drop, ReqlTerm, ReqlString)
+@reql_one(61, table_drop, ReqlString)
 
 # Lists all the tables in a particular database.  (You may
 # omit the first argument to use the default database.)
 # TABLE_LIST = 62; // Database -> ARRAY
 #                  //  -> ARRAY
-@rqlgen_rql(62, table_list)
-@rqlgen_root(62, table_list)
+@reql_one(62, table_list, ReqlTerm)
+@reql_zero(62, table_list)
 
 # NA = 63
 
@@ -250,13 +263,13 @@ include("query_macros.jl")
 # FUNC = 69; // ARRAY, Top -> ARRAY -> Top
 
 # SKIP = 70; // Sequence, NUMBER -> Sequence
-@rqlgen_rql_number(70, skip)
+@reql_two(70, skip, ReqlTerm, ReqlNumber)
 
 # LIMIT = 71; // Sequence, NUMBER -> Sequence
-@rqlgen_rql_number(71, limit)
+@reql_two(71, limit, ReqlTerm, ReqlNumber)
 
 # ZIP = 72; // Sequence -> Sequence
-@rqlgen_rql(72, zip)
+@reql_one(72, zip, ReqlTerm)
 
 # Indicates to ORDER_BY that this attribute is to be sorted in ascending order.
 # ASC = 73; // !STRING -> Ordering
@@ -266,27 +279,29 @@ include("query_macros.jl")
 
 # Creates a new secondary index with a particular name and definition.
 # INDEX_CREATE = 75; // Table, STRING, Function(1), {multi:BOOL} -> OBJECT
-@rqlgen_rql_string(75, index_create)
+@reql_two(75, index_create, ReqlTerm, ReqlString)
 
 # Drops a secondary index with a particular name from the specified table.
 # INDEX_DROP = 76; // Table, STRING -> OBJECT
-@rqlgen_rql_string(76, index_drop)
+@reql_two(76, index_drop, ReqlTerm, ReqlString)
 
 # Lists all secondary indexes on a particular table.
 # INDEX_LIST = 77; // Table -> ARRAY
-@rqlgen_rql(77, index_list)
+@reql_one(77, index_list, ReqlTerm)
 
 # GET_ALL = 78; // Table, DATUM..., {index:!STRING} => ARRAY
 
 # Gets info about anything.  INFO is most commonly called on tables.
 # INFO = 79; // Top -> OBJECT
-@rqlgen_rql(79, info)
+@reql_one(79, info, ReqlTerm)
 
 # Prepend a single element to the end of an array (like `cons`).
 # PREPEND = 80; // ARRAY, DATUM -> ARRAY
+@reql_two(80, prepend, ReqlArray, ReqlDatum)
 
 # Select a number of elements from sequence with uniform distribution.
 # SAMPLE = 81; // Sequence, NUMBER -> Sequence
+@reql_two(81, sample, ReqlArray, ReqlNumber)
 
 # Insert an element in to an array at a given index.
 # INSERT_AT = 82; // ARRAY, NUMBER, DATUM -> ARRAY
@@ -327,6 +342,7 @@ include("query_macros.jl")
 
 # Return an array containing the keys of the object.
 # KEYS = 94; // OBJECT -> ARRAY
+@reql_object(94, keys)
 
 # Remove the elements of one array from another array.
 # DIFFERENCE = 95; // ARRAY, ARRAY -> ARRAY
@@ -337,31 +353,33 @@ include("query_macros.jl")
 # `a.match(b)` returns a match object if the string `a`
 # matches the regular expression `b`.
 # MATCH = 97; // STRING, STRING -> DATUM
+@reql_two(97, match, ReqlString, ReqlString)
 
 # Parses its first argument as a json string and returns it as a
 # datum.
 # JSON = 98; // STRING -> DATUM
+@reql_one(98, json, ReqlString)
 
 # Parses its first arguments as an ISO 8601 time and returns it as a
 # datum.
 # ISO8601 = 99; // STRING -> PSEUDOTYPE(TIME)
-@rqlgen_string(99, iso8601)
+@reql_one(99, iso8601, ReqlString)
 
 # Prints a time as an ISO 8601 time.
 # TO_ISO8601 = 100; // PSEUDOTYPE(TIME) -> STRING
-@rqlgen_rql(100, to_iso8601)
+@reql_one(100, to_iso8601, ReqlTerm)
 
 # Returns a time given seconds since epoch in UTC.
 # EPOCH_TIME = 101; // NUMBER -> PSEUDOTYPE(TIME)
-@rqlgen_rql(101, epoch_time)
+@reql_one(101, epoch_time, ReqlTerm)
 
 # Returns seconds since epoch in UTC given a time.
 # TO_EPOCH_TIME = 102; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(102, to_epoch_time)
+@reql_one(102, to_epoch_time, ReqlTerm)
 
 # The time the query was received by the server.
 # NOW = 103; // -> PSEUDOTYPE(TIME)
-@rqlgen_root(103, now)
+@reql_zero(103, now)
 
 # Puts a time into an ISO 8601 timezone.
 # IN_TIMEZONE = 104; // PSEUDOTYPE(TIME), STRING -> PSEUDOTYPE(TIME)
@@ -371,7 +389,7 @@ include("query_macros.jl")
 
 # Retrieves the date portion of a time.
 # DATE = 106; // PSEUDOTYPE(TIME) -> PSEUDOTYPE(TIME)
-@rqlgen_rql(106, date)
+@reql_one(106, date, ReqlTerm)
 
 # MONDAY = 107;    // -> 1
 
@@ -413,35 +431,35 @@ include("query_macros.jl")
 
 # x.time_of_day == x.date - x
 # TIME_OF_DAY = 126; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(126, time_of_day)
+@reql_one(126, time_of_day, ReqlTerm)
 
 # Returns the timezone of a time.
 # TIMEZONE = 127; // PSEUDOTYPE(TIME) -> STRING
-@rqlgen_rql(127, timezone)
+@reql_one(127, timezone, ReqlTerm)
 
 # YEAR = 128; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(128, year)
+@reql_one(128, year, ReqlTerm)
 
 # MONTH = 129; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(129, month)
+@reql_one(129, month, ReqlTerm)
 
 # DAY = 130; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(130, day)
+@reql_one(130, day, ReqlTerm)
 
 # DAY_OF_WEEK = 131; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(131, day_of_week)
+@reql_one(131, day_of_week, ReqlTerm)
 
 # DAY_OF_YEAR = 132; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(132, day_of_year)
+@reql_one(132, day_of_year, ReqlTerm)
 
 # HOURS = 133; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(133, hours)
+@reql_one(133, hours, ReqlTerm)
 
 # MINUTES = 134; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(134, minutes)
+@reql_one(134, minutes, ReqlTerm)
 
 # SECONDS = 135; // PSEUDOTYPE(TIME) -> NUMBER
-@rqlgen_rql(135, seconds)
+@reql_one(135, seconds, ReqlTerm)
 
 # Construct a time from a date and optional timezone or a
 # date+time and optional timezone.
@@ -456,7 +474,7 @@ include("query_macros.jl")
 # Ensures that previously issued soft-durability writes are complete and
 # written to disk.
 # SYNC = 138; // Table -> OBJECT
-@rqlgen_rql(138, sync)
+@reql_one(138, sync, ReqlTerm)
 
 # Gets information about whether or not a set of indexes are ready to
 # be accessed. Returns a list of objects that look like this:
@@ -469,11 +487,11 @@ include("query_macros.jl")
 
 # Change the case of a string.
 # UPCASE   = 141; // STRING -> STRING
-@rqlgen_string(141, upcase)
+@reql_one(141, upcase, ReqlString)
 
 # Change the case of a string.
 # DOWNCASE = 142; // STRING -> STRING
-@rqlgen_string(142, downcase)
+@reql_one(142, downcase, ReqlString)
 
 # Creates an object
 # OBJECT = 143; // STRING, DATUM, ... -> OBJECT
@@ -485,8 +503,7 @@ include("query_macros.jl")
 # RANDOM = 151; // NUMBER, NUMBER {float:BOOL} -> DATUM
 
 # CHANGES = 152; // TABLE -> STREAM
-@rqlgen_rql(152, changes)
-
+@reql_one(152, changes, ReqlTerm)
 
 # ARGS = 154; // ARRAY -> SPECIAL (used to splice arguments)
 
@@ -500,4 +517,4 @@ include("query_macros.jl")
 # that corresponds to the given database or table.
 # CONFIG  = 174; // Database -> SingleSelection
 #                // Table -> SingleSelection
-@rqlgen_rql(174, config)
+@reql_one(174, config, ReqlTerm)

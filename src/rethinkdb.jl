@@ -57,8 +57,8 @@ function disconnect(conn::RethinkDBConnection)
   close(conn.socket)
 end
 
-function exec(conn::RethinkDBConnection, q::RQL)
-  j = JSON.json([1 ; Array[q.query]])
+function exec(conn::RethinkDBConnection, q::ReqlTerm)
+  j = JSON.json([1 ; Array[q]])
   send_command(conn, j)
 end
 
