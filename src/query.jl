@@ -273,6 +273,7 @@ include("query_macros.jl")
 
 # Indicates to ORDER_BY that this attribute is to be sorted in ascending order.
 # ASC = 73; // !STRING -> Ordering
+@reql_one(73, asc, ReqlNumber)
 
 # Indicates to ORDER_BY that this attribute is to be sorted in descending order.
 # DESC = 74; // !STRING -> Ordering
@@ -305,10 +306,13 @@ include("query_macros.jl")
 
 # Insert an element in to an array at a given index.
 # INSERT_AT = 82; // ARRAY, NUMBER, DATUM -> ARRAY
+@reql_three(82, insert_at, ReqlArray, ReqlNumber, ReqlDatum)
 
 # Remove an element at a given index from an array.
 # DELETE_AT = 83; // ARRAY, NUMBER -> ARRAY |
 #                 // ARRAY, NUMBER, NUMBER -> ARRAY
+@reql_two(83, delete_at, ReqlArray, ReqlNumber)
+@reql_three(83, delete_at, ReqlArray, ReqlNumber, ReqlNumber)
 
 # Change the element at a given index of an array.
 # CHANGE_AT = 84; // ARRAY, NUMBER, DATUM -> ARRAY

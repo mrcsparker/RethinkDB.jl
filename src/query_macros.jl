@@ -5,18 +5,23 @@
 include("types.jl")
 
 function wrap_reql_object(o)
-  if ismatch(r"^Dict", string(typeof(o)))
-    for k in Base.keys(o)
+  if ismatch(r"^Array", string(typeof(o)))
+    for k in 1:length(o)
       o[k] = wrap_reql_object(o[k])
     end
-  end
-
-  if ismatch(r"^Array", string(typeof(o)))
     p = []
     push!(p, 2)
     push!(p, o)
     return p
   end
+
+  if ismatch(r"^Dict", string(typeof(o)))
+    for k in Base.keys(o)
+      o[k] = wrap_reql_object(o[k])
+    end
+    return o
+  end
+
   o
 end
 
@@ -73,6 +78,24 @@ macro reql_two(op_code::Int, name::Symbol, T1, T2)
       local sub = []
       push!(sub, arg1)
       push!(sub, arg2)
+
+      push!(retval, sub)
+
+      ReqlTerm(retval)
+    end
+  end
+end
+
+macro reql_three(op_code::Int, name::Symbol, T1, T2, T3)
+  quote
+    function $(esc(name))(arg1::$T1, arg2::$T2, arg3::$T3)
+      local retval = []
+      push!(retval, $op_code)
+
+      local sub = []
+      push!(sub, arg1)
+      push!(sub, arg2)
+      push!(sub, arg3)
 
       push!(retval, sub)
 
