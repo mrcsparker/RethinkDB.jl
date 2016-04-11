@@ -116,11 +116,12 @@ function do_tour()
     #         [170,[[10,[7]],"name"]], # BRACKET [VAR] "name"
     #       "William Adama"]]]]]]
 
-    cursor = r.db("sample_db") |>
-      d -> r.table(d, "authors") |>
-      d -> r.filter(d, r.eq(r.row("name"), "William Adama")) |>
-      d -> run(c, d)
-    println(cursor)
+    #cursor = r.db("sample_db") |>
+    #  d -> r.table(d, "authors") |>
+    #  d -> r.filter(d, r.eq(r.row("name"), "William Adama")) |>
+    #  d -> run(c, d)
+    #println(cursor)
+
 
     # Retrieve documents by primary key
     cursor = r.db("sample_db") |>

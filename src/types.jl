@@ -55,8 +55,8 @@ end
       value::Nullable
     end
   type ReqlDatum
-    value::Union{ReqlNull, ReqlBool, ReqlNumber, ReqlString, ReqlArray, Dict}
+    value::Union{Nullable, Bool, Number, ByteString, Array, Dict}
   end
 type ReqlTop
-  value::Union{ReqlDatum, ReqlSequence}
+  value::Union{Nullable, Bool, Number, ByteString, Array, Dict}
 end

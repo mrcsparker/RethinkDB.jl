@@ -41,12 +41,16 @@ function convert_type(from, to)
 end
 
 function convert_arr_type(from, to)
+  new_arr = []
+
   for i in 1:length(from)
-    if typeof(from[i]) != to
-      from[i] = to(from)
+    if typeof(from[i]) == to
+      push!(new_arr, from[i])
+    else
+      push!(new_arr, to(from[i]))
     end
   end
-  from
+  new_arr
 end
 
 macro reql_zero(op_code::Int, name::Symbol)
@@ -132,7 +136,9 @@ macro reql_one_twoarr(op_code::Int, name::Symbol, T1, T2)
 
       local sub = []
       push!(sub, wrap(arg1))
-      push!(sub, wrap(arg2))
+      for i in arg2
+        push!(sub, wrap(i))
+      end
 
       push!(retval, sub)
 
@@ -162,4 +168,9 @@ macro reql_one_two_three(op_code::Int, name::Symbol, T1, T2, T3)
       ReqlTerm(retval)
     end
   end
+end
+
+
+function r_do(anon::Function)
+  println(anon)
 end
