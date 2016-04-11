@@ -864,60 +864,214 @@ TIME_OF_DAY = 126; // PSEUDOTYPE(TIME) -> NUMBER
 """
 @reql_one(126, time_of_day, ReqlTerm)
 
-# Returns the timezone of a time.
-# TIMEZONE = 127; // PSEUDOTYPE(TIME) -> STRING
+"""
+Returns the timezone of a time.
+
+TIMEZONE = 127; // PSEUDOTYPE(TIME) -> STRING
+"""
 @reql_one(127, timezone, ReqlTerm)
 
-# YEAR = 128; // PSEUDOTYPE(TIME) -> NUMBER
+# These access the various components of a time.
+
+"YEAR = 128; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(128, year, ReqlTerm)
 
-# MONTH = 129; // PSEUDOTYPE(TIME) -> NUMBER
+"MONTH = 129; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(129, month, ReqlTerm)
 
-# DAY = 130; // PSEUDOTYPE(TIME) -> NUMBER
+"DAY = 130; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(130, day, ReqlTerm)
 
-# DAY_OF_WEEK = 131; // PSEUDOTYPE(TIME) -> NUMBER
+"DAY_OF_WEEK = 131; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(131, day_of_week, ReqlTerm)
 
-# DAY_OF_YEAR = 132; // PSEUDOTYPE(TIME) -> NUMBER
+"DAY_OF_YEAR = 132; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(132, day_of_year, ReqlTerm)
 
-# HOURS = 133; // PSEUDOTYPE(TIME) -> NUMBER
+"HOURS = 133; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(133, hours, ReqlTerm)
 
-# MINUTES = 134; // PSEUDOTYPE(TIME) -> NUMBER
+"MINUTES = 134; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(134, minutes, ReqlTerm)
 
-# SECONDS = 135; // PSEUDOTYPE(TIME) -> NUMBER
+"SECONDS = 135; // PSEUDOTYPE(TIME) -> NUMBER"
 @reql_one(135, seconds, ReqlTerm)
 
-# Construct a time from a date and optional timezone or a
-# date+time and optional timezone.
-# TIME = 136; // NUMBER, NUMBER, NUMBER, STRING -> PSEUDOTYPE(TIME) |
-#             // NUMBER, NUMBER, NUMBER, NUMBER, NUMBER, NUMBER, STRING -> PSEUDOTYPE(TIME) |
+#=
+TODO
+Construct a time from a date and optional timezone or a
+date+time and optional timezone.
 
-# Indicates to MERGE to replace, or remove in case of an empty literal, the
-# other object rather than merge it.
-# LITERAL = 137; // -> Merging
-#                // JSON -> Merging
+TIME = 136; // NUMBER, NUMBER, NUMBER, STRING -> PSEUDOTYPE(TIME) |
+            // NUMBER, NUMBER, NUMBER, NUMBER, NUMBER, NUMBER, STRING -> PSEUDOTYPE(TIME) |
+=#
 
-# UNGROUP = 150; // GROUPED_DATA -> ARRAY
+# Constants for ISO 8601 days of the week.
 
-# Takes a range of numbers and returns a random number within the range
-# RANDOM = 151; // NUMBER, NUMBER {float:BOOL} -> DATUM
+"MONDAY = 107;    // -> 1"
+@reql_zero(107, monday)
 
-# CHANGES = 152; // TABLE -> STREAM
+"TUESDAY = 108;   // -> 2"
+@reql_zero(108, tuesday)
+
+"WEDNESDAY = 109; // -> 3"
+@reql_zero(109, wednesday)
+
+"THURSDAY = 110;  // -> 4"
+@reql_zero(110, thursday)
+
+"FRIDAY = 111;    // -> 5"
+@reql_zero(111, friday)
+
+"SATURDAY = 112;  // -> 6"
+@reql_zero(112, saturday)
+
+"SUNDAY = 113;    // -> 7"
+@reql_zero(113, sunday)
+
+# Constants for ISO 8601 months.
+
+"JANUARY = 114;   // -> 1"
+@reql_zero(114, january)
+
+"FEBRUARY = 115;  // -> 2"
+@reql_zero(115, february)
+
+"MARCH = 116;     // -> 3"
+@reql_zero(116, march)
+
+"APRIL = 117;     // -> 4"
+@reql_zero(117, april)
+
+"MAY = 118;       // -> 5"
+@reql_zero(118, may)
+
+"JUNE = 119;      // -> 6"
+@reql_zero(119, june)
+
+"JULY = 120;      // -> 7"
+@reql_zero(120, july)
+
+"AUGUST = 121;    // -> 8"
+@reql_zero(121, august)
+
+"SEPTEMBER = 122; // -> 9"
+@reql_zero(122, september)
+
+"OCTOBER = 123;   // -> 10"
+@reql_zero(123, october)
+
+"NOVEMBER = 124;  // -> 11"
+@reql_zero(124, november)
+
+"DECEMBER = 125;  // -> 12"
+@reql_zero(125, december)
+
+#=
+TODO
+Indicates to MERGE to replace, or remove in case of an empty literal, the
+other object rather than merge it.
+
+LITERAL = 137; // -> Merging
+               // JSON -> Merging
+=#
+
+"GROUP = 144; // SEQUENCE, STRING -> GROUPED_SEQUENCE | SEQUENCE, FUNCTION -> GROUPED_SEQUENCE"
+@reql_one_two(144, group, ReqlArray, ReqlString)
+
+"SUM = 145; // SEQUENCE, STRING -> GROUPED_SEQUENCE | SEQUENCE, FUNCTION -> GROUPED_SEQUENCE"
+@reql_one_two(145, sum, ReqlArray, ReqlString)
+
+"AVG = 146; // SEQUENCE, STRING -> GROUPED_SEQUENCE | SEQUENCE, FUNCTION -> GROUPED_SEQUENCE"
+@reql_one_two(146, avg, ReqlArray, ReqlString)
+
+"MIN = 147; // SEQUENCE, STRING -> GROUPED_SEQUENCE | SEQUENCE, FUNCTION -> GROUPED_SEQUENCE"
+@reql_one_two(147, min, ReqlArray, ReqlString)
+
+"MAX = 148; // SEQUENCE, STRING -> GROUPED_SEQUENCE | SEQUENCE, FUNCTION -> GROUPED_SEQUENCE"
+@reql_one_two(148, max, ReqlArray, ReqlString)
+
+"""
+`str.split()` splits on whitespace
+`str.split(" ")` splits on spaces only
+`str.split(" ", 5)` splits on spaces with at most 5 results
+`str.split(nil, 5)` splits on whitespace with at most 5 results
+
+SPLIT = 149; // STRING -> ARRAY | STRING, STRING -> ARRAY | STRING, STRING, NUMBER -> ARRAY | STRING, NULL, NUMBER -> ARRAY
+"""
+@reql_one(149, split, ReqlString)
+@reql_one_two(149, split, ReqlString, ReqlString)
+@reql_one_two_three(149, split, ReqlString, ReqlString, ReqlNumber)
+@reql_one_two_three(149, split, ReqlString, ReqlNull, ReqlNumber)
+
+#=
+TODO
+UNGROUP = 150; // GROUPED_DATA -> ARRAY
+=#
+
+"""
+Takes a range of numbers and returns a random number within the range
+
+RANDOM = 151; // NUMBER, NUMBER {float:BOOL} -> DATUM
+"""
+@reql_one_two(151, random, ReqlNumber, ReqlNumber)
+
+"CHANGES = 152; // TABLE -> STREAM"
 @reql_one(152, changes, ReqlTerm)
 
-# ARGS = 154; // ARRAY -> SPECIAL (used to splice arguments)
+"ARGS = 154; // ARRAY -> SPECIAL (used to splice arguments)"
+@reql_one(154, args, ReqlArray)
 
-# GEOJSON = 157; // OBJECT -> PSEUDOTYPE(GEOMETRY)
+# BINARY is client-only at the moment, it is not supported on the server
+# BINARY = 155; // STRING -> PSEUDOTYPE(BINARY)
 
-# TO_GEOJSON = 158; // PSEUDOTYPE(GEOMETRY) -> OBJECT
+"GEOJSON = 157;           // OBJECT -> PSEUDOTYPE(GEOMETRY)"
+@reql_one(157, geojson, ReqlObject)
 
-# FILL = 167; // PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)
+"TO_GEOJSON = 158;        // PSEUDOTYPE(GEOMETRY) -> OBJECT"
+@reql_one(158, to_geojson, ReqlTerm)
 
-# GET_NEAREST = 168;       // TABLE, PSEUDOTYPE(GEOMETRY) {index:!STRING, max_results:NUM, max_dist:NUM, geo_system:STRING, unit:STRING} -> ARRAY
+"POINT = 159;             // NUMBER, NUMBER -> PSEUDOTYPE(GEOMETRY)"
+@reql_one_two(159, point, ReqlNumber, ReqlNumber)
 
-# POLYGON_SUB = 171;       // PSEUDOTYPE(GEOMETRY), PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)
+#=
+TODO
+LINE = 160;              // (ARRAY | PSEUDOTYPE(GEOMETRY))... -> PSEUDOTYPE(GEOMETRY)
+=#
+
+#=
+TODO
+POLYGON = 161;           // (ARRAY | PSEUDOTYPE(GEOMETRY))... -> PSEUDOTYPE(GEOMETRY)
+=#
+
+"DISTANCE = 162;          // PSEUDOTYPE(GEOMETRY), PSEUDOTYPE(GEOMETRY) {geo_system:STRING, unit:STRING} -> NUMBER"
+@reql_one_two(162, distance, ReqlTerm, ReqlTerm)
+
+"INTERSECTS = 163;        // PSEUDOTYPE(GEOMETRY), PSEUDOTYPE(GEOMETRY) -> BOOL"
+@reql_one_two(163, intersects, ReqlTerm, ReqlTerm)
+
+"INCLUDES = 164;          // PSEUDOTYPE(GEOMETRY), PSEUDOTYPE(GEOMETRY) -> BOOL"
+@reql_one_two(164, includes, ReqlTerm, ReqlTerm)
+
+"CIRCLE = 165;            // PSEUDOTYPE(GEOMETRY), NUMBER {num_vertices:NUMBER, geo_system:STRING, unit:STRING, fill:BOOL} -> PSEUDOTYPE(GEOMETRY)"
+@reql_one(165, distance, ReqlTerm)
+
+"GET_INTERSECTING = 166;  // TABLE, PSEUDOTYPE(GEOMETRY) {index:!STRING} -> StreamSelection"
+@reql_one_two(166, get_intersecting, ReqlTerm, ReqlTerm)
+
+"FILL = 167;              // PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)"
+@reql_one(167, fill, ReqlTerm)
+
+"GET_NEAREST = 168;       // TABLE, PSEUDOTYPE(GEOMETRY) {index:!STRING, max_results:NUM, max_dist:NUM, geo_system:STRING, unit:STRING} -> ARRAY"
+@reql_one_two(168, get_nearest, ReqlTerm, ReqlTerm)
+
+"POLYGON_SUB = 171;       // PSEUDOTYPE(GEOMETRY), PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)"
+@reql_one_two(171, polygon_sub, ReqlTerm, ReqlTerm)
+
+# Constants for specifying key ranges
+
+"MINVAL = 180;"
+@reql_zero(180, minval)
+
+"MAXVAL = 181;"
+@reql_zero(181, maxval)
