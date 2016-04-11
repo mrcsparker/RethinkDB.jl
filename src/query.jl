@@ -1,443 +1,867 @@
 
 include("query_macros.jl")
 
-# Takes an integer representing a variable and returns the value stored
-# in that variable.  It's the responsibility of the client to translate
-# from their local representation of a variable to a unique _non-negative_
-# integer for that variable.  (We do it this way instead of letting
-# clients provide variable names as strings to discourage
-# variable-capturing client libraries, and because it's more efficient
-# VAR = 10; // !NUMBER -> DATUM
+# Compound types
+
+"""
+Takes an integer representing a variable and returns the value stored
+in that variable.  It's the responsibility of the client to translate
+from their local representation of a variable to a unique _non-negative_
+integer for that variable.  (We do it this way instead of letting
+clients provide variable names as strings to discourage
+variable-capturing client libraries, and because it's more efficient
+
+VAR = 10; // !NUMBER -> DATUM
+"""
 @reql_one(10, var, ReqlString)
 
-# Takes some javascript code and executes it.
-# JAVASCRIPT = 11; // STRING {timeout: !NUMBER} -> DATUM |
-#                  // STRING {timeout: !NUMBER} -> Function(*)
+"""
+Takes some javascript code and executes it.
+
+JAVASCRIPT = 11; // STRING {timeout: !NUMBER} -> DATUM |
+                 // STRING {timeout: !NUMBER} -> Function(\*)
+"""
 @reql_one(11, javascript, ReqlString)
+
+"alias for RethinkDB.javascript"
 @reql_one(11, js, ReqlString)
 
-# Takes a string and throws an error with that message.
-# Inside of a `default` block, you can omit the first
-# argument to rethrow whatever error you catch (this is most
-# useful as an argument to the `default` filter optarg).
-# ERROR = 12; // STRING -> Error | -> Error
+"UUID = 169; // () -> DATUM"
+@reql_zero(169, datum)
+
+"""
+Takes an HTTP URL and gets it.  If the get succeeds and
+returns valid JSON, it is converted into a DATUM
+
+HTTP = 153; // STRING {data: OBJECT | STRING,
+            //         timeout: !NUMBER,
+            //         method: STRING,
+            //         params: OBJECT,
+            //         header: OBJECT | ARRAY,
+            //         attempts: NUMBER,
+            //         redirects: NUMBER,
+            //         verify: BOOL,
+            //         page: FUNC | STRING,
+            //         page_limit: NUMBER,
+            //         auth: OBJECT,
+            //         result_format: STRING,
+            //         } -> STRING | STREAM
+"""
+@reql_one(153, http, ReqlString)
+
+"""
+Takes a string and throws an error with that message.
+Inside of a `default` block, you can omit the first
+argument to rethrow whatever error you catch (this is most
+useful as an argument to the `default` filter optarg).
+
+ERROR = 12; // STRING -> Error | -> Error
+"""
 @reql_one(12, error, ReqlString)
 
-# Takes nothing and returns a reference to the implicit variable.
-# IMPLICIT_VAR = 13; // -> DATUM
+"""
+Takes nothing and returns a reference to the implicit variable.
+
+IMPLICIT_VAR = 13; // -> DATUM
+"""
 @reql_zero(14, implicit_var)
 
-# Returns a reference to a database.
-# DB = 14; // STRING -> Database
-#@reql_string(14, db)
+# Data Operators
+
+"""
+Returns a reference to a database.
+
+DB = 14; // STRING -> Database
+"""
 @reql_one(14, db, ReqlString)
 
-# Returns a reference to a table.
-# TABLE = 15; // Database, STRING, {read_mode:STRING, identifier_format:STRING} -> Table
-#             // STRING, {read_mode:STRING, identifier_format:STRING} -> Table
+"""
+Returns a reference to a table.
+
+TABLE = 15; // Database, STRING, {read_mode:STRING, identifier_format:STRING} -> Table
+            // STRING, {read_mode:STRING, identifier_format:STRING} -> Table
+"""
 @reql_one_two(15, table, ReqlTerm, ReqlString)
 @reql_one(15, table, ReqlString)
 
-# Gets a single element from a table by its primary or a secondary key.
-# GET = 16; // Table, STRING -> SingleSelection | Table, NUMBER -> SingleSelection |
-#           // Table, STRING -> NULL            | Table, NUMBER -> NULL |
-@reql_one_two(16, get, ReqlTerm, ReqlString)
+"""
+Gets a single element from a table by its primary or a secondary key.
+
+GET = 16; // Table, STRING -> SingleSelection | Table, NUMBER -> SingleSelection |
+          // Table, STRING -> NULL            | Table, NUMBER -> NULL |
+"""
 @reql_one_two(16, get, ReqlTerm, ReqlString)
 
-# EQ = 17; // DATUM... -> BOOL
-#@reql_datumarray(17, eq)
+"GET_ALL = 78; // Table, DATUM..., {index:!STRING} => ARRAY"
+@reql_one_twoarr(78, get_all, ReqlTerm, ReqlDatum)
+
+# Simple DATUM Ops
+
+"EQ = 17; // DATUM... -> BOOL"
 @reql_onearr(17, eq, ReqlDatum)
 
-# NE = 18; // DATUM... -> BOOL
+"NE = 18; // DATUM... -> BOOL"
 @reql_onearr(18, ne, ReqlDatum)
 
-# LT = 19; // DATUM... -> BOOL
+"LT = 19; // DATUM... -> BOOL"
 @reql_onearr(19, lt, ReqlDatum)
 
-# LE = 20; // DATUM... -> BOOL
+"LE = 20; // DATUM... -> BOOL"
 @reql_onearr(20, le, ReqlDatum)
 
-# GT = 21; // DATUM... -> BOOL
+"GT = 21; // DATUM... -> BOOL"
 @reql_onearr(21, gt, ReqlDatum)
 
-# GE = 22; // DATUM... -> BOOL
+"GE = 22; // DATUM... -> BOOL"
 @reql_onearr(22, ge, ReqlDatum)
 
-# NOT = 23; // BOOL -> BOOL
+"NOT = 23; // BOOL -> BOOL"
 @reql_one(23, not, ReqlBool)
 
-# ADD can either add two numbers or concatenate two arrays.
-# ADD = 24; // NUMBER... -> NUMBER | STRING... -> STRING
-@reql_onearr(24, add, ReqlString)
-#@reql_onearr(24, add, ReqlNumber)
+"""
+ADD can either add two numbers or concatenate two arrays.
 
-# SUB = 25; // NUMBER... -> NUMBER
+ADD = 24; // NUMBER... -> NUMBER | STRING... -> STRING
+"""
+@reql_onearr(24, add, ReqlString)
+@reql_onearr(24, add, ReqlNumber)
+
+"SUB = 25; // NUMBER... -> NUMBER"
 @reql_onearr(25, sub, ReqlNumber)
 
-# MUL = 26; // NUMBER... -> NUMBER
+"MUL = 26; // NUMBER... -> NUMBER"
 @reql_onearr(26, mul, ReqlNumber)
 
-# DIV = 27; // NUMBER... -> NUMBER
+"DIV = 27; // NUMBER... -> NUMBER"
 @reql_onearr(27, div, ReqlNumber)
 
-# MOD = 28; // NUMBER, NUMBER -> NUMBER
+"MOD = 28; // NUMBER, NUMBER -> NUMBER"
 @reql_one_two(28, mod, ReqlNumber, ReqlNumber)
 
-# Append a single element to the end of an array (like `snoc`).
-# APPEND = 29; // ARRAY, DATUM -> ARRAY
+"FLOOR = 183;    // NUMBER -> NUMBER"
+@reql_one(183, floor, ReqlNumber)
+
+"CEIL = 184;     // NUMBER -> NUMBER"
+@reql_one(184, ceil, ReqlNumber)
+
+"ROUND = 185;    // NUMBER -> NUMBER"
+@reql_one(185, round, ReqlNumber)
+
+# DATUM Array Ops
+
+"""
+Append a single element to the end of an array (like `snoc`).
+
+APPEND = 29; // ARRAY, DATUM -> ARRAY
+"""
 @reql_one_two(29, append, ReqlArray, ReqlDatum)
 
-# SLICE = 30; // Sequence, NUMBER, NUMBER -> Sequence
+"""
+Prepend a single element to the end of an array (like `cons`).
 
-# Get a particular field from an object, or map that over a
-# sequence.
-# GET_FIELD = 31; // OBJECT, STRING -> DATUM
-#                 // | Sequence, STRING -> Sequence
+PREPEND = 80; // ARRAY, DATUM -> ARRAY
+"""
+@reql_one_two(80, prepend, ReqlArray, ReqlDatum)
+
+"""
+Remove the elements of one array from another array.
+
+DIFFERENCE = 95; // ARRAY, ARRAY -> ARRAY
+"""
+@reql_one_two(95, difference, ReqlArray, ReqlArray)
+
+# DATUM Set Ops
+
+#=
+Set ops work on arrays. They don't use actual sets and thus have
+performance characteristics you would expect from arrays rather than
+from sets. All set operations have the post condition that they
+array they return contains no duplicate values.
+=#
+
+"SET_INSERT = 88; // ARRAY, DATUM -> ARRAY"
+@reql_one_two(88, set_insert, ReqlArray, ReqlDatum)
+
+"SET_INTERSECTION = 89; // ARRAY, ARRAY -> ARRAY"
+@reql_one_two(89, set_intersection, ReqlArray, ReqlArray)
+
+"SET_UNION = 90; // ARRAY, ARRAY -> ARRAY"
+@reql_one_two(90, set_union, ReqlArray, ReqlArray)
+
+"SET_DIFFERENCE = 91; // ARRAY, ARRAY -> ARRAY"
+@reql_one_two(91, set_difference, ReqlArray, ReqlArray)
+
+"SLICE = 30; // Sequence, NUMBER, NUMBER -> Sequence"
+@reql_one_two_three(30, slice, ReqlArray, ReqlNumber, ReqlNumber)
+
+"SKIP = 70; // Sequence, NUMBER -> Sequence"
+@reql_one_two(70, skip, ReqlTerm, ReqlNumber)
+
+"LIMIT = 71; // Sequence, NUMBER -> Sequence"
+@reql_one_two(71, limit, ReqlTerm, ReqlNumber)
+
+"OFFSETS_OF = 87; // Sequence, DATUM -> Sequence | Sequence, Function(1) -> Sequence"
+@reql_one_two(87, offsets_of, ReqlArray, ReqlDatum)
+
+"CONTAINS = 93; // Sequence, (DATUM | Function(1))... -> BOOL"
+@reql_one_twoarr(93, contains, ReqlArray, ReqlDatum)
+
+# Stream/Object Ops
+
+"""
+Get a particular field from an object, or map that over a
+sequence.
+
+GET_FIELD = 31; // OBJECT, STRING -> DATUM
+                // | Sequence, STRING -> Sequence
+"""
 @reql_one_two(31, get_field, ReqlObject, ReqlString)
 @reql_one_two(31, get_field, ReqlArray, ReqlString)
 
-# Check whether an object contains all the specified fields,
-# or filters a sequence so that all objects inside of it
-# contain all the specified fields.
-# HAS_FIELDS = 32; // OBJECT, Pathspec... -> BOOL
+"""
+Return an array containing the keys of the object.
+
+KEYS = 94; // OBJECT -> ARRAY
+"""
+@reql_one(94, keys, ReqlObject)
+
+"""
+Return an array containing the values of the object.
+
+VALUES = 186; // OBJECT -> ARRAY
+"""
+@reql_one(186, values, ReqlObject)
+
+#=
+TODO
+Creates an object
+
+OBJECT = 143; // STRING, DATUM, ... -> OBJECT
+=#
+
+"""
+Check whether an object contains all the specified fields,
+or filters a sequence so that all objects inside of it
+contain all the specified fields.
+
+HAS_FIELDS = 32; // OBJECT, Pathspec... -> BOOL
+"""
 @reql_one_two(32, has_fields, ReqlTerm, ReqlString)
 @reql_one_two(32, has_fields, ReqlTerm, ReqlNumber)
 
-# Get a subset of an object by selecting some attributes to preserve,
-# or map that over a sequence.  (Both pick and pluck, polymorphic.)
-# PLUCK = 33; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
+#=
+TODO
+x.with_fields(...) <=> x.has_fields(...).pluck(...)
+WITH_FIELDS = 96; // Sequence, Pathspec... -> Sequence
+=#
+
+"""
+Get a subset of an object by selecting some attributes to preserve,
+or map that over a sequence.  (Both pick and pluck, polymorphic.)
+
+PLUCK = 33; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
+"""
 @reql_one_two(33, pluck, ReqlTerm, ReqlString)
 
-# Get a subset of an object by selecting some attributes to discard, or
-# map that over a sequence.  (Both unpick and without, polymorphic.)
-# WITHOUT = 34; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
+#=
+TODO
+Get a subset of an object by selecting some attributes to discard, or
+map that over a sequence.  (Both unpick and without, polymorphic.)
+WITHOUT = 34; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
+=#
 
-# Merge objects (right-preferential)
-# MERGE = 35; // OBJECT... -> OBJECT | Sequence -> Sequence
+#=
+TODO
+Merge objects (right-preferential)
+MERGE = 35; // OBJECT... -> OBJECT | Sequence -> Sequence
+=#
 
-# Get all elements of a sequence between two values.
-# Half-open by default, but the openness of either side can be
-# changed by passing 'closed' or 'open for `right_bound` or
-# `left_bound`.
-# BETWEEN_DEPRECATED = 36; // Deprecated version of between, which allows `null` to specify unboundedness
-#                          // With the newer version, clients should use `r.minval` and `r.maxval` for unboundedness
+# Sequence Ops
 
-# REDUCE = 37; // Sequence, Function(2) -> DATUM
+#=
+Get all elements of a sequence between two values.
+Half-open by default, but the openness of either side can be
+changed by passing 'closed' or 'open for `right_bound` or
+`left_bound`.
+=#
 
-# MAP = 38; // Sequence, Function(1) -> Sequence
-#           // The arity of the function should be
-#           // Sequence..., Function(sizeof...(Sequence)) -> Sequence
+#=
+BETWEEN_DEPRECATED = 36; // Deprecated version of between, which allows `null` to specify unboundedness
+                         // With the newer version, clients should use `r.minval` and `r.maxval` for unboundedness
+=#
 
-# Filter a sequence with either a function or a shortcut
-# object (see API docs for details).  The body of FILTER is
-# wrapped in an implicit `.default(false)`, and you can
-# change the default value by specifying the `default`
-# optarg.  If you make the default `r.error`, all errors
-# caught by `default` will be rethrown as if the `default`
-# did not exist.
-# FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
-#              // Sequence, OBJECT, {default:DATUM} -> Sequence
+#=
+TODO
+ BETWEEN   = 182; // StreamSelection, DATUM, DATUM, {index:!STRING, right_bound:STRING, left_bound:STRING} -> StreamSelection
+=#
+
+#=
+TODO
+REDUCE = 37; // Sequence, Function(2) -> DATUM
+=#
+
+#=
+TODO
+MAP = 38; // Sequence, Function(1) -> Sequence
+          // The arity of the function should be
+          // Sequence..., Function(sizeof...(Sequence)) -> Sequence
+=#
+
+"""
+TODO: Function(1)
+Filter a sequence with either a function or a shortcut
+object (see API docs for details).  The body of FILTER is
+wrapped in an implicit `.default(false)`, and you can
+change the default value by specifying the `default`
+optarg.  If you make the default `r.error`, all errors
+caught by `default` will be rethrown as if the `default`
+did not exist.
+
+FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
+             // Sequence, OBJECT, {default:DATUM} -> Sequence
+"""
 @reql_one_two(39, filter, ReqlTerm, ReqlTerm)
 @reql_one_two(39, filter, ReqlTerm, ReqlObject)
 
-# Map a function over a sequence and then concatenate the results together.
-# CONCAT_MAP = 40; // Sequence, Function(1) -> Sequence
+#=
+TODO
+Map a function over a sequence and then concatenate the results together.
 
-# Order a sequence based on one or more attributes.
-# ORDER_BY = 41; // Sequence, (!STRING | Ordering)..., {index: (!STRING | Ordering)} -> Sequence
+CONCAT_MAP = 40; // Sequence, Function(1) -> Sequence
+=#
 
-# Get all distinct elements of a sequence (like `uniq`).
-# DISTINCT = 42; // Sequence -> Sequence
+#=
+TODO
+Order a sequence based on one or more attributes.
+
+ORDER_BY = 41; // Sequence, (!STRING | Ordering)..., {index: (!STRING | Ordering)} -> Sequence
+=#
+
+"""
+Get all distinct elements of a sequence (like `uniq`).
+
+DISTINCT = 42; // Sequence -> Sequence
+"""
 @reql_one(42, distinct, ReqlTerm)
 
-# Count the number of elements in a sequence, or only the elements that match
-# a given filter.
-# COUNT = 43; // Sequence -> NUMBER | Sequence, DATUM -> NUMBER | Sequence, Function(1) -> NUMBER
-@reql_one(43, count, ReqlTerm)
+"""
+Count the number of elements in a sequence, or only the elements that match
+a given filter.
 
-# Take the union of multiple sequences (preserves duplicate elements! (use distinct)).
-# UNION = 44; // Sequence... -> Sequence
+COUNT = 43; // Sequence -> NUMBER | Sequence, DATUM -> NUMBER | Sequence, Function(1) -> NUMBER
+"""
+@reql_one(43, count, ReqlArray)
 
-# Get the Nth element of a sequence.
-# NTH = 45; // Sequence, NUMBER -> DATUM
+"IS_EMPTY = 86; // Sequence -> BOOL"
+@reql_one(86, is_empty, ReqlArray)
+
+#=
+TODO
+Take the union of multiple sequences (preserves duplicate elements! (use distinct)).
+UNION = 44; // Sequence... -> Sequence
+=#
+
+"""
+Get the Nth element of a sequence.
+
+NTH = 45; // Sequence, NUMBER -> DATUM
+"""
 @reql_one_two(45, nth, ReqlTerm, ReqlNumber)
 
-# // OBSOLETE_GROUPED_MAPREDUCE = 46;
+"""
+do NTH or GET_FIELD depending on target object
 
-#  // OBSOLETE_GROUPBY = 47;
+BRACKET = 170; // Sequence | OBJECT, NUMBER | STRING -> DATUM
+"""
+@reql_one(170, bracket, ReqlArray)
+@reql_one_two(170, bracket, ReqlObject, ReqlNumber)
+@reql_one(170, bracket, ReqlString)
 
-# INNER_JOIN = 48; // Sequence, Sequence, Function(2) -> Sequence
+# OBSOLETE_GROUPED_MAPREDUCE = 46;
 
-# OUTER_JOIN = 49; // Sequence, Sequence, Function(2) -> Sequence
+# OBSOLETE_GROUPBY = 47;
 
-# An inner-join that does an equality comparison on two attributes.
-# EQ_JOIN = 50; // Sequence, !STRING, Sequence, {index:!STRING} -> Sequence
+#=
+TODO
+INNER_JOIN = 48; // Sequence, Sequence, Function(2) -> Sequence
+=#
 
-# Coerces a datum to a named type (e.g. "bool").
-# If you previously used `stream_to_array`, you should use this instead
-# with the type "array".
-# COERCE_TO = 51; // Top, STRING -> Top
+#=
+TODO
+OUTER_JOIN = 49; // Sequence, Sequence, Function(2) -> Sequence
+=#
 
-# Returns the named type of a datum (e.g. TYPE_OF(true) = "BOOL")
-# TYPE_OF = 52; // Top -> STRING
+#=
+TODO
+An inner-join that does an equality comparison on two attributes.
 
-# Updates all the rows in a selection.  Calls its Function with the row
-# to be updated, and then merges the result of that call.
-# UPDATE = 53; // StreamSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
-#              // SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
-#              // StreamSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
-#              // SingleSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
-@reql_one_two(53, update, ReqlTerm, ReqlObject)
+EQ_JOIN = 50; // Sequence, !STRING, Sequence, {index:!STRING} -> Sequence
+=#
 
-# Deletes all the rows in a selection.
-# DELETE = 54; // StreamSelection, {durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection -> OBJECT
-@reql_one(54, delete, ReqlTerm)
+"ZIP = 72; // Sequence -> Sequence"
+@reql_one(72, zip, ReqlArray)
 
-# Replaces all the rows in a selection.  Calls its Function with the row
-# to be replaced, and then discards it and stores the result of that
-# call.
-# REPLACE = 55; // StreamSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
+"""
+RANGE = 173; // -> Sequence                        [0, +inf)
+             // NUMBER -> Sequence                 [0, a)
+             // NUMBER, NUMBER -> Sequence         [a, b)
+"""
+@reql_zero(173, range)
+@reql_one(173, range, ReqlNumber)
+@reql_one_two(173, range, ReqlNumber, ReqlNumber)
 
-# Inserts into a table.  If `conflict` is replace, overwrites
-# entries with the same primary key.  If `conflict` is
-# update, does an update on the entry.  If `conflict` is
-# error, or is omitted, conflicts will trigger an error.
-# INSERT = 56; // Table, OBJECT, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT | Table, Sequence, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT
-@reql_one_two(56, insert, ReqlTerm, ReqlObject)
+# Array Ops
 
-# Creates a database with a particular name.
-# DB_CREATE = 57; // STRING -> OBJECT
-@reql_one(57, db_create, ReqlString)
+"""
+Insert an element in to an array at a given index.
 
-# Drops a database with a particular name.
-# DB_DROP = 58; // STRING -> OBJECT
-@reql_one(58, db_drop, ReqlString)
-
-# Lists all the databases by name.  (Takes no arguments)
-# DB_LIST = 59; // -> ARRAY
-@reql_zero(59, db_list)
-
-# Creates a table with a particular name in a particular
-# database.  (You may omit the first argument to use the
-# default database.)
-# TABLE_CREATE = 60; // Database, STRING, {primary_key:STRING, shards:NUMBER, replicas:NUMBER, primary_replica_tag:STRING} -> OBJECT
-#                    // Database, STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
-#                    // STRING, {primary_key:STRING, shards:NUMBER, replicas:NUMBER, primary_replica_tag:STRING} -> OBJECT
-#                    // STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
-@reql_one_two(60, table_create, ReqlTerm, ReqlString)
-@reql_one(60, table_create, ReqlString)
-
-# Drops a table with a particular name from a particular
-# database.  (You may omit the first argument to use the
-# default database.)
-# TABLE_DROP = 61; // Database, STRING -> OBJECT
-#                  // STRING -> OBJECT
-@reql_one_two(61, table_drop, ReqlTerm, ReqlString)
-@reql_one(61, table_drop, ReqlString)
-
-# Lists all the tables in a particular database.  (You may
-# omit the first argument to use the default database.)
-# TABLE_LIST = 62; // Database -> ARRAY
-#                  //  -> ARRAY
-@reql_one(62, table_list, ReqlTerm)
-@reql_zero(62, table_list)
-
-# NA = 63
-
-# Calls a function on data
-# FUNCALL = 64; // Function(*), DATUM... -> DATUM
-
-# Executes its first argument, and returns its second argument if it
-# got [true] or its third argument if it got [false] (like an `if`
-# statement).
-# BRANCH = 65; // BOOL, Top, Top -> Top
-
-# Returns true if any of its arguments returns true (short-circuits).
-# OR = 66; // BOOL... -> BOOL
-
-# Returns true if all of its arguments return true (short-circuits).
-# AND = 67; // BOOL... -> BOOL
-
-# Calls its Function with each entry in the sequence
-# and executes the array of terms that Function returns.
-# FOR_EACH = 68; // Sequence, Function(1) -> OBJECT
-
-# FUNC = 69; // ARRAY, Top -> ARRAY -> Top
-@reql_one_two(69, func, ReqlArray, ReqlTop)
-
-# SKIP = 70; // Sequence, NUMBER -> Sequence
-@reql_one_two(70, skip, ReqlTerm, ReqlNumber)
-
-# LIMIT = 71; // Sequence, NUMBER -> Sequence
-@reql_one_two(71, limit, ReqlTerm, ReqlNumber)
-
-# ZIP = 72; // Sequence -> Sequence
-@reql_one(72, zip, ReqlTerm)
-
-# Indicates to ORDER_BY that this attribute is to be sorted in ascending order.
-# ASC = 73; // !STRING -> Ordering
-@reql_one(73, asc, ReqlNumber)
-
-# Indicates to ORDER_BY that this attribute is to be sorted in descending order.
-# DESC = 74; // !STRING -> Ordering
-
-# Creates a new secondary index with a particular name and definition.
-# INDEX_CREATE = 75; // Table, STRING, Function(1), {multi:BOOL} -> OBJECT
-@reql_one_two(75, index_create, ReqlTerm, ReqlString)
-
-# Drops a secondary index with a particular name from the specified table.
-# INDEX_DROP = 76; // Table, STRING -> OBJECT
-@reql_one_two(76, index_drop, ReqlTerm, ReqlString)
-
-# Lists all secondary indexes on a particular table.
-# INDEX_LIST = 77; // Table -> ARRAY
-@reql_one(77, index_list, ReqlTerm)
-
-# GET_ALL = 78; // Table, DATUM..., {index:!STRING} => ARRAY
-
-# Gets info about anything.  INFO is most commonly called on tables.
-# INFO = 79; // Top -> OBJECT
-@reql_one(79, info, ReqlTerm)
-
-# Prepend a single element to the end of an array (like `cons`).
-# PREPEND = 80; // ARRAY, DATUM -> ARRAY
-@reql_one_two(80, prepend, ReqlArray, ReqlDatum)
-
-# Select a number of elements from sequence with uniform distribution.
-# SAMPLE = 81; // Sequence, NUMBER -> Sequence
-@reql_one_two(81, sample, ReqlArray, ReqlNumber)
-
-# Insert an element in to an array at a given index.
-# INSERT_AT = 82; // ARRAY, NUMBER, DATUM -> ARRAY
+INSERT_AT = 82; // ARRAY, NUMBER, DATUM -> ARRAY
+"""
 @reql_one_two_three(82, insert_at, ReqlArray, ReqlNumber, ReqlDatum)
 
-# Remove an element at a given index from an array.
-# DELETE_AT = 83; // ARRAY, NUMBER -> ARRAY |
-#                 // ARRAY, NUMBER, NUMBER -> ARRAY
+"""
+Remove an element at a given index from an array.
+
+DELETE_AT = 83; // ARRAY, NUMBER -> ARRAY |
+                // ARRAY, NUMBER, NUMBER -> ARRAY
+"""
 @reql_one_two(83, delete_at, ReqlArray, ReqlNumber)
 @reql_one_two_three(83, delete_at, ReqlArray, ReqlNumber, ReqlNumber)
 
-# Change the element at a given index of an array.
-# CHANGE_AT = 84; // ARRAY, NUMBER, DATUM -> ARRAY
+"""
+Change the element at a given index of an array.
 
-# Splice one array in to another array.
-# SPLICE_AT = 85; // ARRAY, NUMBER, ARRAY -> ARRAY
+CHANGE_AT = 84; // ARRAY, NUMBER, DATUM -> ARRAY
+"""
+@reql_one_two_three(84, change_at, ReqlArray, ReqlNumber, ReqlDatum)
 
-# IS_EMPTY = 86; // Sequence -> BOOL
+"""
+Splice one array in to another array.
 
-# OFFSETS_OF = 87; // Sequence, DATUM -> Sequence | Sequence, Function(1) -> Sequence
+SPLICE_AT = 85; // ARRAY, NUMBER, ARRAY -> ARRAY
+"""
+@reql_one_two_three(85, splice_at, ReqlArray, ReqlNumber, ReqlArray)
 
-# SET_INSERT = 88; // ARRAY, DATUM -> ARRAY
+# Type Ops
 
-# SET_INTERSECTION = 89; // ARRAY, ARRAY -> ARRAY
+"""
+Coerces a datum to a named type (e.g. "bool").
+If you previously used `stream_to_array`, you should use this instead
+with the type "array".
 
-# SET_UNION = 90; // ARRAY, ARRAY -> ARRAY
+COERCE_TO = 51; // Top, STRING -> Top
+"""
+@reql_one_two(51, coerce_to, ReqlTerm, ReqlString)
 
-# SET_DIFFERENCE = 91; // ARRAY, ARRAY -> ARRAY
+"""
+Returns the named type of a datum (e.g. TYPE_OF(true) = "BOOL")
 
-# Evaluates its first argument.  If that argument returns
-# NULL or throws an error related to the absence of an
-# expected value (for instance, accessing a non-existent
-# field or adding NULL to an integer), DEFAULT will either
-# return its second argument or execute it if it's a
-# function.  If the second argument is a function, it will be
-# passed either the text of the error or NULL as its
-# argument.
-# DEFAULT = 92; // Top, Top -> Top
+TYPE_OF = 52; // Top -> STRING
+"""
+@reql_one(52, type_of, ReqlTerm)
 
-# CONTAINS = 93; // Sequence, (DATUM | Function(1))... -> BOOL
+# Write Ops (the OBJECTs contain data about number of errors etc.)
 
-# Return an array containing the keys of the object.
-# KEYS = 94; // OBJECT -> ARRAY
-@reql_one(94, keys, ReqlObject)
+"""
+TODO: func
+Updates all the rows in a selection.  Calls its Function with the row
+to be updated, and then merges the result of that call.
 
-# Remove the elements of one array from another array.
-# DIFFERENCE = 95; // ARRAY, ARRAY -> ARRAY
+UPDATE = 53; // StreamSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
+             // SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
+             // StreamSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
+             // SingleSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
+"""
+@reql_one_two(53, update, ReqlTerm, ReqlObject)
 
-# x.with_fields(...) <=> x.has_fields(...).pluck(...)
-# WITH_FIELDS = 96; // Sequence, Pathspec... -> Sequence
+"""
+Deletes all the rows in a selection.
 
-# `a.match(b)` returns a match object if the string `a`
-# matches the regular expression `b`.
-# MATCH = 97; // STRING, STRING -> DATUM
+DELETE = 54; // StreamSelection, {durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection -> OBJECT
+"""
+@reql_one(54, delete, ReqlTerm)
+
+#=
+TODO
+Replaces all the rows in a selection.  Calls its Function with the row
+to be replaced, and then discards it and stores the result of that
+call.
+
+REPLACE = 55; // StreamSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
+=#
+
+"""
+Inserts into a table.  If `conflict` is replace, overwrites
+entries with the same primary key.  If `conflict` is
+update, does an update on the entry.  If `conflict` is
+error, or is omitted, conflicts will trigger an error.
+
+INSERT = 56; // Table, OBJECT, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT | Table, Sequence, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT
+"""
+@reql_one_two(56, insert, ReqlTerm, ReqlObject)
+
+# Administrative OPs
+
+"""
+Creates a database with a particular name.
+
+DB_CREATE = 57; // STRING -> OBJECT
+"""
+@reql_one(57, db_create, ReqlString)
+
+"""
+Drops a database with a particular name.
+
+DB_DROP = 58; // STRING -> OBJECT
+"""
+@reql_one(58, db_drop, ReqlString)
+
+"""
+Lists all the databases by name.  (Takes no arguments)
+
+DB_LIST = 59; // -> ARRAY
+"""
+@reql_zero(59, db_list)
+
+"""
+Creates a table with a particular name in a particular
+database.  (You may omit the first argument to use the
+default database.)
+
+TABLE_CREATE = 60; // Database, STRING, {primary_key:STRING, shards:NUMBER, replicas:NUMBER, primary_replica_tag:STRING} -> OBJECT
+                   // Database, STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
+                   // STRING, {primary_key:STRING, shards:NUMBER, replicas:NUMBER, primary_replica_tag:STRING} -> OBJECT
+                   // STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
+"""
+@reql_one_two(60, table_create, ReqlTerm, ReqlString)
+@reql_one(60, table_create, ReqlString)
+
+"""
+Drops a table with a particular name from a particular
+database.  (You may omit the first argument to use the
+default database.)
+
+TABLE_DROP = 61; // Database, STRING -> OBJECT
+                 // STRING -> OBJECT
+"""
+@reql_one_two(61, table_drop, ReqlTerm, ReqlString)
+@reql_one(61, table_drop, ReqlString)
+
+"""
+Lists all the tables in a particular database.  (You may
+omit the first argument to use the default database.)
+
+TABLE_LIST = 62; // Database -> ARRAY
+                 //  -> ARRAY
+"""
+@reql_one(62, table_list, ReqlTerm)
+@reql_zero(62, table_list)
+
+"""
+Returns the row in the `rethinkdb.table_config` or `rethinkdb.db_config` table
+that corresponds to the given database or table.
+CONFIG  = 174; // Database -> SingleSelection
+               // Table -> SingleSelection
+"""
+@reql_one(174, config, ReqlTerm)
+
+"""
+Returns the row in the `rethinkdb.table_status` table that corresponds to the
+given table.
+
+STATUS  = 175; // Table -> SingleSelection
+"""
+@reql_one(175, status, ReqlTerm)
+
+"""
+Called on a table, waits for that table to be ready for read/write operations.
+Called on a database, waits for all of the tables in the database to be ready.
+Returns the corresponding row or rows from the `rethinkdb.table_status` table.
+
+WAIT    = 177; // Table -> OBJECT
+               // Database -> OBJECT
+"""
+@reql_one(177, wait, ReqlTerm)
+
+#=
+TODO
+Generates a new config for the given table, or all tables in the given database
+The `shards` and `replicas` arguments are required. If `emergency_repair` is
+specified, it will enter a completely different mode of repairing a table
+which has lost half or more of its replicas.
+
+RECONFIGURE   = 176; // Database|Table, {shards:NUMBER, replicas:NUMBER [,
+                     //                  dry_run:BOOLEAN]
+                     //                 } -> OBJECT
+                     // Database|Table, {shards:NUMBER, replicas:OBJECT [,
+                     //                  primary_replica_tag:STRING,
+                     //                  nonvoting_replica_tags:ARRAY,
+                     //                  dry_run:BOOLEAN]
+                     //                 } -> OBJECT
+                     // Table, {emergency_repair:STRING, dry_run:BOOLEAN} -> OBJECT
+=#
+
+"""
+Balances the table's shards but leaves everything else the same. Can also be
+applied to an entire database at once.
+
+REBALANCE     = 179; // Table -> OBJECT
+                     // Database -> OBJECT
+"""
+@reql_one(179, rebalance, ReqlTerm)
+
+"""
+Ensures that previously issued soft-durability writes are complete and
+written to disk.
+
+SYNC = 138; // Table -> OBJECT
+"""
+@reql_one(138, sync, ReqlTerm)
+
+"""
+Set global, database, or table-specific permissions
+
+GRANT         = 188; //          -> OBJECT
+                     // Database -> OBJECT
+                     // Table    -> OBJECT
+"""
+@reql_zero(188, grant)
+@reql_one(188, grant, ReqlTerm)
+
+# Secondary indexes OPs
+
+#=
+TODO
+Creates a new secondary index with a particular name and definition.
+INDEX_CREATE = 75; // Table, STRING, Function(1), {multi:BOOL} -> OBJECT
+=#
+
+"""
+Drops a secondary index with a particular name from the specified table.
+
+INDEX_DROP = 76; // Table, STRING -> OBJECT
+"""
+@reql_one_two(76, index_drop, ReqlTerm, ReqlString)
+
+"""
+Lists all secondary indexes on a particular table.
+
+INDEX_LIST = 77; // Table -> ARRAY
+"""
+@reql_one(77, index_list, ReqlTerm)
+
+"""
+Gets information about whether or not a set of indexes are ready to
+be accessed. Returns a list of objects that look like this:
+{index:STRING, ready:BOOL[, progress:NUMBER]}
+
+INDEX_STATUS = 139; // Table, STRING... -> ARRAY
+"""
+@reql_one_twoarr(139, index_status, ReqlTerm, ReqlString)
+
+"""
+Blocks until a set of indexes are ready to be accessed. Returns the
+same values INDEX_STATUS.
+
+INDEX_WAIT = 140; // Table, STRING... -> ARRAY
+"""
+@reql_one_twoarr(140, index_wait, ReqlTerm, ReqlString)
+
+"""
+Renames the given index to a new name
+
+INDEX_RENAME = 156; // Table, STRING, STRING, {overwrite:BOOL} -> OBJECT
+"""
+@reql_one_two_three(156, index_rename, ReqlTerm, ReqlString, ReqlString)
+
+# Control Operators
+
+#=
+TODO
+Calls a function on data
+
+FUNCALL = 64; // Function(*), DATUM... -> DATUM
+=#
+
+"""
+Executes its first argument, and returns its second argument if it
+got [true] or its third argument if it got [false] (like an `if`
+statement).
+
+BRANCH = 65; // BOOL, Top, Top -> Top
+"""
+@reql_one_two_three(65, branch, ReqlBool, ReqlTop, ReqlTop)
+
+"""
+Returns true if any of its arguments returns true (short-circuits).
+
+OR = 66; // BOOL... -> BOOL
+"""
+@reql_onearr(66, or, ReqlBool)
+
+"""
+Returns true if all of its arguments return true (short-circuits).
+
+AND = 67; // BOOL... -> BOOL
+"""
+@reql_onearr(67, and, ReqlBool)
+
+#=
+TODO
+Calls its Function with each entry in the sequence
+and executes the array of terms that Function returns.
+
+FOR_EACH = 68; // Sequence, Function(1) -> OBJECT
+=#
+
+# Special Terms
+
+"FUNC = 69; // ARRAY, Top -> ARRAY -> Top"
+@reql_one_two(69, func, ReqlArray, ReqlTop)
+
+"""
+Indicates to ORDER_BY that this attribute is to be sorted in ascending order.
+
+ASC = 73; // !STRING -> Ordering
+"""
+@reql_one(73, asc, ReqlNumber)
+
+"""
+Indicates to ORDER_BY that this attribute is to be sorted in descending order.
+
+DESC = 74; // !STRING -> Ordering
+"""
+@reql_one(74, desc, ReqlNumber)
+
+"""
+Gets info about anything.  INFO is most commonly called on tables.
+
+INFO = 79; // Top -> OBJECT
+"""
+@reql_one(79, info, ReqlTerm)
+
+"""
+`a.match(b)` returns a match object if the string `a`
+matches the regular expression `b`.
+
+MATCH = 97; // STRING, STRING -> DATUM
+"""
 @reql_one_two(97, match, ReqlString, ReqlString)
 
-# Parses its first argument as a json string and returns it as a
-# datum.
-# JSON = 98; // STRING -> DATUM
+"""
+Change the case of a string.
+
+UPCASE   = 141; // STRING -> STRING
+"""
+@reql_one(141, upcase, ReqlString)
+
+"""
+Change the case of a string.
+
+DOWNCASE = 142; // STRING -> STRING
+"""
+@reql_one(142, downcase, ReqlString)
+
+"""
+Select a number of elements from sequence with uniform distribution.
+
+SAMPLE = 81; // Sequence, NUMBER -> Sequence
+"""
+@reql_one_two(81, sample, ReqlArray, ReqlNumber)
+
+"""
+Evaluates its first argument.  If that argument returns
+NULL or throws an error related to the absence of an
+expected value (for instance, accessing a non-existent
+field or adding NULL to an integer), DEFAULT will either
+return its second argument or execute it if it's a
+function.  If the second argument is a function, it will be
+passed either the text of the error or NULL as its
+argument.
+
+DEFAULT = 92; // Top, Top -> Top
+"""
+@reql_one_two(92, default, ReqlTop, ReqlTop)
+
+"""
+Parses its first argument as a json string and returns it as a
+datum.
+
+JSON = 98; // STRING -> DATUM
+"""
 @reql_one(98, json, ReqlString)
 
-# Parses its first arguments as an ISO 8601 time and returns it as a
-# datum.
-# ISO8601 = 99; // STRING -> PSEUDOTYPE(TIME)
+"""
+Returns the datum as a JSON string.
+N.B.: we would really prefer this be named TO_JSON and that exists as
+an alias in Python and JavaScript drivers; however it conflicts with the
+standard `to_json` method defined by Ruby's standard json library.
+TO_JSON_STRING = 172; // DATUM -> STRING
+"""
+@reql_one(172, to_json_string, ReqlDatum)
+
+"""
+Parses its first arguments as an ISO 8601 time and returns it as a
+datum.
+
+ISO8601 = 99; // STRING -> PSEUDOTYPE(TIME)
+"""
 @reql_one(99, iso8601, ReqlString)
 
-# Prints a time as an ISO 8601 time.
-# TO_ISO8601 = 100; // PSEUDOTYPE(TIME) -> STRING
+"""
+Prints a time as an ISO 8601 time.
+
+TO_ISO8601 = 100; // PSEUDOTYPE(TIME) -> STRING
+"""
 @reql_one(100, to_iso8601, ReqlTerm)
 
-# Returns a time given seconds since epoch in UTC.
-# EPOCH_TIME = 101; // NUMBER -> PSEUDOTYPE(TIME)
+"""
+Returns a time given seconds since epoch in UTC.
+
+EPOCH_TIME = 101; // NUMBER -> PSEUDOTYPE(TIME)
+"""
 @reql_one(101, epoch_time, ReqlTerm)
 
-# Returns seconds since epoch in UTC given a time.
-# TO_EPOCH_TIME = 102; // PSEUDOTYPE(TIME) -> NUMBER
+"""
+Returns seconds since epoch in UTC given a time.
+
+TO_EPOCH_TIME = 102; // PSEUDOTYPE(TIME) -> NUMBER
+"""
 @reql_one(102, to_epoch_time, ReqlTerm)
 
-# The time the query was received by the server.
-# NOW = 103; // -> PSEUDOTYPE(TIME)
+"""
+The time the query was received by the server.
+
+NOW = 103; // -> PSEUDOTYPE(TIME)
+"""
 @reql_zero(103, now)
 
-# Puts a time into an ISO 8601 timezone.
-# IN_TIMEZONE = 104; // PSEUDOTYPE(TIME), STRING -> PSEUDOTYPE(TIME)
+"""
+Puts a time into an ISO 8601 timezone.
 
-# a.during(b, c) returns whether a is in the range [b, c)
-# DURING = 105; // PSEUDOTYPE(TIME), PSEUDOTYPE(TIME), PSEUDOTYPE(TIME) -> BOOL
+IN_TIMEZONE = 104; // PSEUDOTYPE(TIME), STRING -> PSEUDOTYPE(TIME)
+"""
+@reql_one_two(104, in_timezone, ReqlTerm, ReqlString)
 
-# Retrieves the date portion of a time.
-# DATE = 106; // PSEUDOTYPE(TIME) -> PSEUDOTYPE(TIME)
+"""
+a.during(b, c) returns whether a is in the range [b, c)
+
+DURING = 105; // PSEUDOTYPE(TIME), PSEUDOTYPE(TIME), PSEUDOTYPE(TIME) -> BOOL
+"""
+@reql_one_two_three(105, during, ReqlTerm, ReqlTerm, ReqlTerm)
+
+"""
+Retrieves the date portion of a time.
+
+DATE = 106; // PSEUDOTYPE(TIME) -> PSEUDOTYPE(TIME)
+"""
 @reql_one(106, date, ReqlTerm)
 
-# MONDAY = 107;    // -> 1
+"""
+x.time_of_day == x.date - x
 
-# TUESDAY = 108;   // -> 2
-
-# WEDNESDAY = 109; // -> 3
-
-# THURSDAY = 110;  // -> 4
-
-# FRIDAY = 111;    // -> 5
-
-# SATURDAY = 112;  // -> 6
-
-# SUNDAY = 113;    // -> 7
-
-# JANUARY = 114;   // -> 1
-
-# FEBRUARY = 115;  // -> 2
-
-# MARCH = 116;     // -> 3
-
-# APRIL = 117;     // -> 4
-
-# MAY = 118;       // -> 5
-
-# JUNE = 119;      // -> 6
-
-# JULY = 120;      // -> 7
-
-# AUGUST = 121;    // -> 8
-
-# SEPTEMBER = 122; // -> 9
-
-# OCTOBER = 123;   // -> 10
-
-# NOVEMBER = 124;  // -> 11
-
-# DECEMBER = 125;  // -> 12
-
-# x.time_of_day == x.date - x
-# TIME_OF_DAY = 126; // PSEUDOTYPE(TIME) -> NUMBER
+TIME_OF_DAY = 126; // PSEUDOTYPE(TIME) -> NUMBER
+"""
 @reql_one(126, time_of_day, ReqlTerm)
 
 # Returns the timezone of a time.
@@ -478,32 +902,6 @@ include("query_macros.jl")
 # LITERAL = 137; // -> Merging
 #                // JSON -> Merging
 
-# Ensures that previously issued soft-durability writes are complete and
-# written to disk.
-# SYNC = 138; // Table -> OBJECT
-@reql_one(138, sync, ReqlTerm)
-
-# Gets information about whether or not a set of indexes are ready to
-# be accessed. Returns a list of objects that look like this:
-# {index:STRING, ready:BOOL[, progress:NUMBER]}
-# INDEX_STATUS = 139; // Table, STRING... -> ARRAY
-
-# Blocks until a set of indexes are ready to be accessed. Returns the
-# same values INDEX_STATUS.
-# INDEX_WAIT = 140; // Table, STRING... -> ARRAY
-
-# Change the case of a string.
-# UPCASE   = 141; // STRING -> STRING
-@reql_one(141, upcase, ReqlString)
-
-# Change the case of a string.
-# DOWNCASE = 142; // STRING -> STRING
-@reql_one(142, downcase, ReqlString)
-
-# Creates an object
-# OBJECT = 143; // STRING, DATUM, ... -> OBJECT
-
-
 # UNGROUP = 150; // GROUPED_DATA -> ARRAY
 
 # Takes a range of numbers and returns a random number within the range
@@ -520,8 +918,6 @@ include("query_macros.jl")
 
 # FILL = 167; // PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)
 
-# Returns the row in the `rethinkdb.table_config` or `rethinkdb.db_config` table
-# that corresponds to the given database or table.
-# CONFIG  = 174; // Database -> SingleSelection
-#                // Table -> SingleSelection
-@reql_one(174, config, ReqlTerm)
+# GET_NEAREST = 168;       // TABLE, PSEUDOTYPE(GEOMETRY) {index:!STRING, max_results:NUM, max_dist:NUM, geo_system:STRING, unit:STRING} -> ARRAY
+
+# POLYGON_SUB = 171;       // PSEUDOTYPE(GEOMETRY), PSEUDOTYPE(GEOMETRY) -> PSEUDOTYPE(GEOMETRY)

@@ -80,7 +80,7 @@ end
 
 macro reql_onearr(op_code::Int, name::Symbol, T1)
   quote
-    function $(esc(name))(arg1::$T1)
+    function $(esc(name))(arg1...)
 
       arg1 = convert_arr_type(arg1, $T1)
 
@@ -105,6 +105,27 @@ macro reql_one_two(op_code::Int, name::Symbol, T1, T2)
 
       arg1 = convert_type(arg1, $T1)
       arg2 = convert_type(arg2, $T2)
+
+      local retval = []
+      push!(retval, $op_code)
+
+      local sub = []
+      push!(sub, wrap(arg1))
+      push!(sub, wrap(arg2))
+
+      push!(retval, sub)
+
+      ReqlTerm(retval)
+    end
+  end
+end
+
+macro reql_one_twoarr(op_code::Int, name::Symbol, T1, T2)
+  quote
+    function $(esc(name))(arg1, arg2...)
+
+      arg1 = convert_type(arg1, $T1)
+      arg2 = convert_arr_type(arg2, $T2)
 
       local retval = []
       push!(retval, $op_code)

@@ -39,7 +39,6 @@ end
       value::Array
     end
         # typealias ReqlSingleSelection = Dict
-    # typealias ReqlObject = Array
     type ReqlObject
       value::Union{Dict, Array}
     end
