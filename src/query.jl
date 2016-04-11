@@ -35,14 +35,14 @@ include("query_macros.jl")
 # Returns a reference to a table.
 # TABLE = 15; // Database, STRING, {read_mode:STRING, identifier_format:STRING} -> Table
 #             // STRING, {read_mode:STRING, identifier_format:STRING} -> Table
-@reql_two(15, table, ReqlTerm, ReqlString)
+@reql_one_two(15, table, ReqlTerm, ReqlString)
 @reql_one(15, table, ReqlString)
 
 # Gets a single element from a table by its primary or a secondary key.
 # GET = 16; // Table, STRING -> SingleSelection | Table, NUMBER -> SingleSelection |
 #           // Table, STRING -> NULL            | Table, NUMBER -> NULL |
-@reql_two(16, get, ReqlTerm, ReqlString)
-@reql_two(16, get, ReqlTerm, ReqlString)
+@reql_one_two(16, get, ReqlTerm, ReqlString)
+@reql_one_two(16, get, ReqlTerm, ReqlString)
 
 # EQ = 17; // DATUM... -> BOOL
 #@reql_datumarray(17, eq)
@@ -81,11 +81,11 @@ include("query_macros.jl")
 @reql_onearr(27, div, ReqlNumber)
 
 # MOD = 28; // NUMBER, NUMBER -> NUMBER
-@reql_two(28, mod, ReqlNumber, ReqlNumber)
+@reql_one_two(28, mod, ReqlNumber, ReqlNumber)
 
 # Append a single element to the end of an array (like `snoc`).
 # APPEND = 29; // ARRAY, DATUM -> ARRAY
-@reql_two(29, append, ReqlArray, ReqlDatum)
+@reql_one_two(29, append, ReqlArray, ReqlDatum)
 
 # SLICE = 30; // Sequence, NUMBER, NUMBER -> Sequence
 
@@ -93,18 +93,20 @@ include("query_macros.jl")
 # sequence.
 # GET_FIELD = 31; // OBJECT, STRING -> DATUM
 #                 // | Sequence, STRING -> Sequence
+@reql_one_two(31, get_field, ReqlObject, ReqlString)
+@reql_one_two(31, get_field, ReqlArray, ReqlString)
 
 # Check whether an object contains all the specified fields,
 # or filters a sequence so that all objects inside of it
 # contain all the specified fields.
 # HAS_FIELDS = 32; // OBJECT, Pathspec... -> BOOL
-@reql_two(32, has_fields, ReqlTerm, ReqlString)
-@reql_two(32, has_fields, ReqlTerm, ReqlNumber)
+@reql_one_two(32, has_fields, ReqlTerm, ReqlString)
+@reql_one_two(32, has_fields, ReqlTerm, ReqlNumber)
 
 # Get a subset of an object by selecting some attributes to preserve,
 # or map that over a sequence.  (Both pick and pluck, polymorphic.)
 # PLUCK = 33; // Sequence, Pathspec... -> Sequence | OBJECT, Pathspec... -> OBJECT
-@reql_two(33, pluck, ReqlTerm, ReqlString)
+@reql_one_two(33, pluck, ReqlTerm, ReqlString)
 
 # Get a subset of an object by selecting some attributes to discard, or
 # map that over a sequence.  (Both unpick and without, polymorphic.)
@@ -135,8 +137,8 @@ include("query_macros.jl")
 # did not exist.
 # FILTER = 39; // Sequence, Function(1), {default:DATUM} -> Sequence |
 #              // Sequence, OBJECT, {default:DATUM} -> Sequence
-@reql_two(39, filter, ReqlTerm, ReqlTerm)
-@reql_term_object(39, filter)
+@reql_one_two(39, filter, ReqlTerm, ReqlTerm)
+@reql_one_two(39, filter, ReqlTerm, ReqlObject)
 
 # Map a function over a sequence and then concatenate the results together.
 # CONCAT_MAP = 40; // Sequence, Function(1) -> Sequence
@@ -158,7 +160,7 @@ include("query_macros.jl")
 
 # Get the Nth element of a sequence.
 # NTH = 45; // Sequence, NUMBER -> DATUM
-@reql_two(45, nth, ReqlTerm, ReqlNumber)
+@reql_one_two(45, nth, ReqlTerm, ReqlNumber)
 
 # // OBSOLETE_GROUPED_MAPREDUCE = 46;
 
@@ -185,7 +187,7 @@ include("query_macros.jl")
 #              // SingleSelection, Function(1), {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
 #              // StreamSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT |
 #              // SingleSelection, OBJECT,      {non_atomic:BOOL, durability:STRING, return_changes:BOOL} -> OBJECT
-@reql_term_object(53, update)
+@reql_one_two(53, update, ReqlTerm, ReqlObject)
 
 # Deletes all the rows in a selection.
 # DELETE = 54; // StreamSelection, {durability:STRING, return_changes:BOOL} -> OBJECT | SingleSelection -> OBJECT
@@ -201,7 +203,7 @@ include("query_macros.jl")
 # update, does an update on the entry.  If `conflict` is
 # error, or is omitted, conflicts will trigger an error.
 # INSERT = 56; // Table, OBJECT, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT | Table, Sequence, {conflict:STRING, durability:STRING, return_changes:BOOL} -> OBJECT
-@reql_term_object(56, insert)
+@reql_one_two(56, insert, ReqlTerm, ReqlObject)
 
 # Creates a database with a particular name.
 # DB_CREATE = 57; // STRING -> OBJECT
@@ -222,7 +224,7 @@ include("query_macros.jl")
 #                    // Database, STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
 #                    // STRING, {primary_key:STRING, shards:NUMBER, replicas:NUMBER, primary_replica_tag:STRING} -> OBJECT
 #                    // STRING, {primary_key:STRING, shards:NUMBER, replicas:OBJECT, primary_replica_tag:STRING} -> OBJECT
-@reql_two(60, table_create, ReqlTerm, ReqlString)
+@reql_one_two(60, table_create, ReqlTerm, ReqlString)
 @reql_one(60, table_create, ReqlString)
 
 # Drops a table with a particular name from a particular
@@ -230,7 +232,7 @@ include("query_macros.jl")
 # default database.)
 # TABLE_DROP = 61; // Database, STRING -> OBJECT
 #                  // STRING -> OBJECT
-@reql_two(61, table_drop, ReqlTerm, ReqlString)
+@reql_one_two(61, table_drop, ReqlTerm, ReqlString)
 @reql_one(61, table_drop, ReqlString)
 
 # Lists all the tables in a particular database.  (You may
@@ -261,12 +263,13 @@ include("query_macros.jl")
 # FOR_EACH = 68; // Sequence, Function(1) -> OBJECT
 
 # FUNC = 69; // ARRAY, Top -> ARRAY -> Top
+@reql_one_two(69, func, ReqlArray, ReqlTop)
 
 # SKIP = 70; // Sequence, NUMBER -> Sequence
-@reql_two(70, skip, ReqlTerm, ReqlNumber)
+@reql_one_two(70, skip, ReqlTerm, ReqlNumber)
 
 # LIMIT = 71; // Sequence, NUMBER -> Sequence
-@reql_two(71, limit, ReqlTerm, ReqlNumber)
+@reql_one_two(71, limit, ReqlTerm, ReqlNumber)
 
 # ZIP = 72; // Sequence -> Sequence
 @reql_one(72, zip, ReqlTerm)
@@ -280,11 +283,11 @@ include("query_macros.jl")
 
 # Creates a new secondary index with a particular name and definition.
 # INDEX_CREATE = 75; // Table, STRING, Function(1), {multi:BOOL} -> OBJECT
-@reql_two(75, index_create, ReqlTerm, ReqlString)
+@reql_one_two(75, index_create, ReqlTerm, ReqlString)
 
 # Drops a secondary index with a particular name from the specified table.
 # INDEX_DROP = 76; // Table, STRING -> OBJECT
-@reql_two(76, index_drop, ReqlTerm, ReqlString)
+@reql_one_two(76, index_drop, ReqlTerm, ReqlString)
 
 # Lists all secondary indexes on a particular table.
 # INDEX_LIST = 77; // Table -> ARRAY
@@ -298,21 +301,21 @@ include("query_macros.jl")
 
 # Prepend a single element to the end of an array (like `cons`).
 # PREPEND = 80; // ARRAY, DATUM -> ARRAY
-@reql_two(80, prepend, ReqlArray, ReqlDatum)
+@reql_one_two(80, prepend, ReqlArray, ReqlDatum)
 
 # Select a number of elements from sequence with uniform distribution.
 # SAMPLE = 81; // Sequence, NUMBER -> Sequence
-@reql_two(81, sample, ReqlArray, ReqlNumber)
+@reql_one_two(81, sample, ReqlArray, ReqlNumber)
 
 # Insert an element in to an array at a given index.
 # INSERT_AT = 82; // ARRAY, NUMBER, DATUM -> ARRAY
-@reql_three(82, insert_at, ReqlArray, ReqlNumber, ReqlDatum)
+@reql_one_two_three(82, insert_at, ReqlArray, ReqlNumber, ReqlDatum)
 
 # Remove an element at a given index from an array.
 # DELETE_AT = 83; // ARRAY, NUMBER -> ARRAY |
 #                 // ARRAY, NUMBER, NUMBER -> ARRAY
-@reql_two(83, delete_at, ReqlArray, ReqlNumber)
-@reql_three(83, delete_at, ReqlArray, ReqlNumber, ReqlNumber)
+@reql_one_two(83, delete_at, ReqlArray, ReqlNumber)
+@reql_one_two_three(83, delete_at, ReqlArray, ReqlNumber, ReqlNumber)
 
 # Change the element at a given index of an array.
 # CHANGE_AT = 84; // ARRAY, NUMBER, DATUM -> ARRAY
@@ -346,7 +349,7 @@ include("query_macros.jl")
 
 # Return an array containing the keys of the object.
 # KEYS = 94; // OBJECT -> ARRAY
-@reql_object(94, keys)
+@reql_one(94, keys, ReqlObject)
 
 # Remove the elements of one array from another array.
 # DIFFERENCE = 95; // ARRAY, ARRAY -> ARRAY
@@ -357,7 +360,7 @@ include("query_macros.jl")
 # `a.match(b)` returns a match object if the string `a`
 # matches the regular expression `b`.
 # MATCH = 97; // STRING, STRING -> DATUM
-@reql_two(97, match, ReqlString, ReqlString)
+@reql_one_two(97, match, ReqlString, ReqlString)
 
 # Parses its first argument as a json string and returns it as a
 # datum.

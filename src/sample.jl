@@ -57,10 +57,77 @@ function do_tour()
     d -> run(c, d) |> println
 
   # Insert data
-  r.db("sample_db") |>
+  cursor = r.db("sample_db") |>
     d -> r.table(d, "authors") |>
-    d -> r.insert(d, [{"name" => "chris", "items" => [{"first"=>"purse"}]}, {"name" => "maryann", "items" => [{"first"=>"shoes"}]} ]) |>
-    d -> run(c, d) |> println
+    d -> r.insert(d, [
+      { "name"=>"William Adama", "tv_show"=>"Battlestar Galactica",
+        "posts"=>[
+          {"title"=>"Decommissioning speech", "content"=>"The Cylon War is long over..."},
+          {"title"=>"We are at war", "content"=>"Moments ago, this ship received..."},
+          {"title"=>"The new Earth", "content"=>"The discoveries of the past few days..."}
+        ]
+      },
+      { "name"=>"Laura Roslin", "tv_show"=>"Battlestar Galactica",
+        "posts"=>[
+          {"title"=>"The oath of office", "content"=>"I, Laura Roslin, ..."},
+          {"title"=>"They look like us", "content"=>"The Cylons have the ability..."}
+        ]
+      },
+      { "name"=>"Jean-Luc Picard", "tv_show"=>"Star Trek TNG",
+        "posts"=>[
+          {"title"=>"Civil rights", "content"=>"There are some words I've known since..."}
+        ]
+      }
+    ]) |>
+    d -> run(c, d)
+
+    local pk = ""
+
+    for k in cursor["generated_keys"]
+      println("key: ", k)
+      pk = k
+    end
+
+    # All documents in a table
+    local cursor = r.db("sample_db") |> d -> r.table(d, "authors") |> d -> run(c, d)
+    for k in cursor
+      n = length(k["posts"])
+      println("Name: ", k["name"], " \t\t  TV Show: ", k["tv_show"], "\t\t Posts: ", n)
+    end
+
+    # Filter documents based on a condition
+    cursor = r.db("sample_db") |> d -> r.table(d, "authors") |> d -> run(c, d)
+
+    # Filter documents based on a condition
+    cursor = r.db("sample_db") |>
+      d -> r.table(d, "authors") |>
+      d -> r.filter(d, {"name" => "William Adama"}) |>
+      d -> run(c, d)
+    #println(cursor)
+
+    # [1,
+    #   [39, [
+    #     [15, [
+    #       [14,["sample_db"]],
+    #     "authors"]],
+    #     [69, [                       # func
+    #       [2,[7]],                   # MAKE_ARRAY[7]
+    #       [17,[                      # eq
+    #         [170,[[10,[7]],"name"]], # BRACKET [VAR] "name"
+    #       "William Adama"]]]]]]
+
+    #cursor = r.db("sample_db") |>
+    #  d -> r.table(d, "authors") |>
+    #  d -> r.filter(d, r.eq(r.row("name"), "William Adama")) |>
+    #  d -> run(c, d)
+    #println(cursor)
+
+    # Retrieve documents by primary key
+    cursor = r.db("sample_db") |>
+      d -> r.table(d, "authors") |>
+      d -> r.get(d, pk) |>
+      d -> run(c, d)
+    println(cursor)
 
   r.disconnect(c)
 end

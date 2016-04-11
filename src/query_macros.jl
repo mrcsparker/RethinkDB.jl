@@ -4,25 +4,49 @@
 
 include("types.jl")
 
-function wrap_reql_object(o)
-  if ismatch(r"^Array", string(typeof(o)))
-    for k in 1:length(o)
-      o[k] = wrap_reql_object(o[k])
+function _wrap(w)
+
+  if ismatch(r"^Array", string(typeof(w)))
+    for k in 1:length(w)
+      w[k] = _wrap(w[k])
     end
     p = []
     push!(p, 2)
-    push!(p, o)
+    push!(p, w)
     return p
   end
 
-  if ismatch(r"^Dict", string(typeof(o)))
-    for k in Base.keys(o)
-      o[k] = wrap_reql_object(o[k])
+  if ismatch(r"^Dict", string(typeof(w)))
+    for k in Base.keys(w)
+      w[k] = _wrap(w[k])
     end
-    return o
+    return w
   end
 
-  o
+  w
+end
+
+function wrap(o)
+  if typeof(o) != ReqlObject
+    return o.value
+  end
+  _wrap(o.value)
+end
+
+function convert_type(from, to)
+  if typeof(from) == to
+    return from
+  end
+  to(from)
+end
+
+function convert_arr_type(from, to)
+  for i in 1:length(from)
+    if typeof(from[i]) != to
+      from[i] = to(from)
+    end
+  end
+  from
 end
 
 macro reql_zero(op_code::Int, name::Symbol)
@@ -37,12 +61,15 @@ end
 
 macro reql_one(op_code::Int, name::Symbol, T1)
   quote
-    function $(esc(name))(arg1::$T1)
+    function $(esc(name))(arg1)
+
+      arg1 = convert_type(arg1, $T1)
+
       local retval = []
       push!(retval, $op_code)
 
       local sub = []
-      push!(sub, arg1)
+      push!(sub, wrap(arg1))
 
       push!(retval, sub)
 
@@ -53,13 +80,16 @@ end
 
 macro reql_onearr(op_code::Int, name::Symbol, T1)
   quote
-    function $(esc(name))(arg1::$T1...)
+    function $(esc(name))(arg1::$T1)
+
+      arg1 = convert_arr_type(arg1, $T1)
+
       local retval = []
       push!(retval, $op_code)
 
       local sub = []
       for i in arg1
-        push!(sub, i)
+        push!(sub, wrap(i))
       end
 
       push!(retval, sub)
@@ -69,15 +99,19 @@ macro reql_onearr(op_code::Int, name::Symbol, T1)
   end
 end
 
-macro reql_two(op_code::Int, name::Symbol, T1, T2)
+macro reql_one_two(op_code::Int, name::Symbol, T1, T2)
   quote
-    function $(esc(name))(arg1::$T1, arg2::$T2)
+    function $(esc(name))(arg1, arg2)
+
+      arg1 = convert_type(arg1, $T1)
+      arg2 = convert_type(arg2, $T2)
+
       local retval = []
       push!(retval, $op_code)
 
       local sub = []
-      push!(sub, arg1)
-      push!(sub, arg2)
+      push!(sub, wrap(arg1))
+      push!(sub, wrap(arg2))
 
       push!(retval, sub)
 
@@ -86,49 +120,21 @@ macro reql_two(op_code::Int, name::Symbol, T1, T2)
   end
 end
 
-macro reql_three(op_code::Int, name::Symbol, T1, T2, T3)
+macro reql_one_two_three(op_code::Int, name::Symbol, T1, T2, T3)
   quote
-    function $(esc(name))(arg1::$T1, arg2::$T2, arg3::$T3)
+    function $(esc(name))(arg1, arg2, arg3)
+
+      arg1 = convert_type(arg1, $T1)
+      arg2 = convert_type(arg2, $T2)
+      arg3 = convert_type(arg3, $T3)
+
       local retval = []
       push!(retval, $op_code)
 
       local sub = []
-      push!(sub, arg1)
-      push!(sub, arg2)
-      push!(sub, arg3)
-
-      push!(retval, sub)
-
-      ReqlTerm(retval)
-    end
-  end
-end
-
-macro reql_object(op_code::Int, name::Symbol)
-  quote
-    function $(esc(name))(object)
-      local retval = []
-      push!(retval, $(op_code))
-
-      local sub = []
-      push!(sub, wrap_reql_object(object))
-
-      push!(retval, sub)
-
-      ReqlTerm(retval)
-    end
-  end
-end
-
-macro reql_term_object(op_code::Int, name::Symbol)
-  quote
-    function $(esc(name))(term::ReqlTerm, object)
-      local retval = []
-      push!(retval, $(op_code))
-
-      local sub = []
-      push!(sub, term)
-      push!(sub, wrap_reql_object(object))
+      push!(sub, wrap(arg1))
+      push!(sub, wrap(arg2))
+      push!(sub, wrap(arg3))
 
       push!(retval, sub)
 

@@ -58,11 +58,21 @@ function disconnect(conn::RethinkDBConnection)
 end
 
 function exec(conn::RethinkDBConnection, q::ReqlTerm)
-  j = JSON.json([1 ; Array[q]])
+  j = JSON.json([1 ; Array[q.value]])
   send_command(conn, j)
 end
 
-run = exec
+function run(conn::RethinkDBConnection, q::ReqlTerm)
+  o = exec(conn, q)
+  response_type = o["t"]
+
+  if response_type == 1
+    return o["r"][1]
+  elseif response_type == 2
+    return o["r"]
+  end
+  o["r"]
+end
 
 function token()
   t = Array{UInt64}(1)
