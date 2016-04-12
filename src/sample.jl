@@ -181,7 +181,6 @@ function to_ast(ast)
   ret
 end
 
-
 function _to_ast(ast)
 
   if (isarray(ast))
@@ -193,13 +192,14 @@ function _to_ast(ast)
   end
 
   if (!isreql(ast))
-    local tmp_not_reql = []
-    push!(tmp_not_reql, ast)
-    return tmp_not_reql
+    return ast
   end
 
   if ast.op_code != -1
-    return [ast.op_code, _to_ast(ast.value)]
+    local tmp_op_code = []
+    push!(tmp_op_code, ast.op_code)
+    push!(tmp_op_code, _to_ast(ast.value))
+    return tmp_op_code
   else
     return _to_ast(ast.value)
   end

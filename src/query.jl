@@ -90,8 +90,6 @@ IMPLICIT_VAR = 13; // -> DATUM
 """
 @reql_zero(13, implicit_var,
   ReqlDatum)
-@reql_zero(13, row,
-  ReqlDatum)
 
 # Data Operators
 

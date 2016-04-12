@@ -55,7 +55,7 @@ type ReqlNull
 end
 
 function reql_type(a::Type{ReqlNull})
-  Nullable
+  Union{ReqlNull, Void}
 end
 
 # Top/DATUM/BOOL
