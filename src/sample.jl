@@ -1,134 +1,178 @@
-function do_test()
+function do_ast()
   r = RethinkDB
 
-  c = r.connect()
-
-  #db_create("tester") |> d -> exec(c, d) |> println
-  #db_drop("tester") |> d -> exec(c, d) |> println
-  #db_list() |> d -> exec(c, d) |> println
-
-  #db_create("test_db") |> d -> exec(c, d) |> println
-  #db("test_db") |> d -> table_create(d, "test_table") |> d -> exec(c, d) |> println
-  #db("test_table") |> d -> table_drop("foo") |> d -> exec(c, d) |> println
-
-  #db("test_db") |>
-  #  d -> table(d, "test_table") |>
-  #  d -> insert(d, { "status" => "open", "item" => [{"name" => "foo", "amount" => "22"}] }) |>
-  #  d -> exec(c, d) |> println
-
-  r.db("test_db") |>
-    d -> r.table(d, "test_table") |>
-    d -> r.filter(d, { "status" => "open"}) |>
-    d -> r.skip(d, 3) |>
-    d -> r.has_fields(d, "xxx") |>
-    d -> r.exec(c, d) |> println
-
-  #now() |>
-  #  d -> date(d) |>
-  #  d -> exec(c, d) |> println
-
-  #db("test_db") |>
-  #  d -> table(d, "test_table") |>
-  #  sync |> println
-
-  r.db("test_db") |>
-    d -> r.table(d, "test_table") |>
-    d -> r.filter(d, r.js("(function(s) { return s.status === 'open'; })")) |>
-    d -> r.exec(c, d) |> println
-
-  r.db("test_db") |>
-    d -> r.config(d) |> println
-
-  r.disconnect(c)
-end
-
-function do_tour()
-  r = RethinkDB
-
-  c = r.connect()
-
-  # Create a new DB
+  #=
   r.db_create("sample_db") |>
-    d -> run(c, d) |> println
+    println
 
-  # Create a new table
   r.db("sample_db") |>
     d -> r.table_create(d, "authors") |>
-    d -> run(c, d) |> println
+    println
 
-  # Insert data
-  cursor = r.db("sample_db") |>
+    cursor = r.db("sample_db") |>
+      d -> r.table(d, "authors") |>
+      d -> r.insert(d, [
+        { "name"=>"William Adama", "tv_show"=>"Battlestar Galactica",
+          "posts"=>[
+            {"title"=>"Decommissioning speech", "content"=>"The Cylon War is long over..."},
+            {"title"=>"We are at war", "content"=>"Moments ago, this ship received..."},
+            {"title"=>"The new Earth", "content"=>"The discoveries of the past few days..."}
+          ]
+        },
+        { "name"=>"Laura Roslin", "tv_show"=>"Battlestar Galactica",
+          "posts"=>[
+            {"title"=>"The oath of office", "content"=>"I, Laura Roslin, ..."},
+            {"title"=>"They look like us", "content"=>"The Cylons have the ability..."}
+          ]
+        },
+        { "name"=>"Jean-Luc Picard", "tv_show"=>"Star Trek TNG",
+          "posts"=>[
+            {"title"=>"Civil rights", "content"=>"There are some words I've known since..."}
+          ]
+        }
+      ]) |> println
+
+  r.db("sample_db") |>
     d -> r.table(d, "authors") |>
-    d -> r.insert(d, [
-      { "name"=>"William Adama", "tv_show"=>"Battlestar Galactica",
-        "posts"=>[
-          {"title"=>"Decommissioning speech", "content"=>"The Cylon War is long over..."},
-          {"title"=>"We are at war", "content"=>"Moments ago, this ship received..."},
-          {"title"=>"The new Earth", "content"=>"The discoveries of the past few days..."}
-        ]
-      },
-      { "name"=>"Laura Roslin", "tv_show"=>"Battlestar Galactica",
-        "posts"=>[
-          {"title"=>"The oath of office", "content"=>"I, Laura Roslin, ..."},
-          {"title"=>"They look like us", "content"=>"The Cylons have the ability..."}
-        ]
-      },
-      { "name"=>"Jean-Luc Picard", "tv_show"=>"Star Trek TNG",
-        "posts"=>[
-          {"title"=>"Civil rights", "content"=>"There are some words I've known since..."}
-        ]
-      }
-    ]) |>
-    d -> run(c, d)
+    d -> r.get_all(d) |>
+    d -> r.filter(d, {"name" => "William Adama"}) |> println
 
-    local pk = ""
+  =#
+  #=
+  ruby
+  [1,
+    [39,[ // filter
+      [15,["authors"]], // table
+      [69,[ // func
+        [2,[29]], // Array
+        [17,[ // eq
+          [170,[ // Bracket
+            [10,[29]], // var
+          "name"]],
+        "William Adama"]]
+      ]]
+    ]],
+  {}]
 
-    for k in cursor["generated_keys"]
-      println("key: ", k)
-      pk = k
+  js
+  [1,
+    [39,[ // filter
+      [15,["authors"]], // table
+      [69,[ // func
+        [2,[0]], // Array
+        [17,[ // eq
+          [170,[ // Bracket
+            [13,[]], // IMPLICIT_VAR
+          "name"]],
+        "William Adama"]]
+      ]]
+    ]]
+  ]
+
+  [39,[15,"authors"],[69,[],[17,[null,"name"],"William Adama"]]]
+  =#
+
+  println("")
+
+  r.table("authors") |>
+    d -> r.filter(d,
+      r.func0(
+        r.row("name") |> d -> r.eq(d, "William Adama")
+      )
+    ) |> parse_ast |> JSON.json |> println
+
+  #=
+  r.table("marvel").get("IronMan").bracket("firstAppearance")
+
+  [1,
+    [170,[ // Bracket
+      [16,[ // get
+        [15,["marvel"]], // Table
+      "IronMan"]],
+    "firstAppearance"]]
+  ]
+  =#
+  #r.table("marvel") |>
+  #  d -> r.get(d, "IronMan") |>
+  #  d -> r.bracket(d, "firstAppearance") |> println
+
+  #=
+  r.row("authors")
+  [1,
+    [170,[ // Bracket
+      [13,[]], // IMPLICIT_VAR
+    "authors"]]
+  ]
+  =#
+
+  #r.implicit_var() |>
+  #  d -> r.bracket(d, "authors") |> println
+
+  #r.row("authors") |> println
+
+end
+
+function isarray(a::Array)
+  true
+end
+
+function isarray(a)
+  false
+end
+
+function isreql(a)
+  try
+    reql_type(typeof(a))
+    true
+  catch e
+    false
+  end
+end
+
+#=
+RethinkDB.ReqlSequence(39,
+  Any[RethinkDB.ReqlSequence(-1,RethinkDB.ReqlTable(15,
+    Any[RethinkDB.ReqlString(-1,"authors")])), RethinkDB.ReqlFunction1(-1,RethinkDB.ReqlTop(69,
+      Any[RethinkDB.ReqlArray(2,Any[]),RethinkDB.ReqlTop(-1,RethinkDB.ReqlBool(17,
+        Any[RethinkDB.ReqlDatum(170,
+          Any[RethinkDB.ReqlDatum(13,Any[]),
+        RethinkDB.ReqlString(-1,"name")]),RethinkDB.ReqlDatum(-1,"William Adama")]))]))])
+
+
+=#
+
+function parse_ast(ast, a::Array = [])
+
+  if (isarray(ast))
+    local items = []
+    for i in ast
+      push!(items, parse_ast(i.value))
     end
+    return items
+  end
 
-    # All documents in a table
-    local cursor = r.db("sample_db") |> d -> r.table(d, "authors") |> d -> run(c, d)
-    for k in cursor
-      n = length(k["posts"])
-      println("Name: ", k["name"], " \t\t  TV Show: ", k["tv_show"], "\t\t Posts: ", n)
-    end
+  println(":first")
+  println(typeof(ast))
+  println(isreql(ast))
+  println(ast)
+  println("")
 
-    # Filter documents based on a condition
-    cursor = r.db("sample_db") |> d -> r.table(d, "authors") |> d -> run(c, d)
+  if (!isreql(ast))
+    return ast
+  end
 
-    # Filter documents based on a condition
-    cursor = r.db("sample_db") |>
-      d -> r.table(d, "authors") |>
-      d -> r.filter(d, {"name" => "William Adama"}) |>
-      d -> run(c, d)
-    #println(cursor)
+  println(":second")
+  println(typeof(ast))
+  println(isreql(ast))
+  println(ast.op_code)
+  show(ast)
+  println("")
 
-    # [1,
-    #   [39, [
-    #     [15, [
-    #       [14,["sample_db"]],
-    #     "authors"]],
-    #     [69, [                       # func
-    #       [2,[7]],                   # MAKE_ARRAY[7]
-    #       [17,[                      # eq
-    #         [170,[[10,[7]],"name"]], # BRACKET [VAR] "name"
-    #       "William Adama"]]]]]]
-
-    #cursor = r.db("sample_db") |>
-    #  d -> r.table(d, "authors") |>
-    #  d -> r.filter(d, r.eq(r.row("name"), "William Adama")) |>
-    #  d -> run(c, d)
-    #println(cursor)
-
-
-    # Retrieve documents by primary key
-    cursor = r.db("sample_db") |>
-      d -> r.table(d, "authors") |>
-      d -> r.get(d, pk) |>
-      d -> run(c, d)
-    println(cursor)
-
-  r.disconnect(c)
+  if ast.op_code != -1
+    items = []
+    push!(items, [ast.op_code, parse_ast(ast.value)])
+    return items
+  else
+    return parse_ast(ast.value)
+  end
 end

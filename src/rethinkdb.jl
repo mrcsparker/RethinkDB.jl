@@ -57,12 +57,12 @@ function disconnect(conn::RethinkDBConnection)
   close(conn.socket)
 end
 
-function exec(conn::RethinkDBConnection, q::ReqlTerm)
+function exec(conn::RethinkDBConnection, q)
   j = JSON.json([1 ; Array[q.value]])
   send_command(conn, j)
 end
 
-function run(conn::RethinkDBConnection, q::ReqlTerm)
+function run(conn::RethinkDBConnection, q)
   o = exec(conn, q)
   response_type = o["t"]
 
