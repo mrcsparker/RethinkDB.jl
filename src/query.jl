@@ -514,11 +514,12 @@ BRACKET = 170; // Sequence | OBJECT, NUMBER | STRING -> DATUM
   ReqlSequence, ReqlString,
   ReqlDatum)
 @reql_one_two(170, bracket,
+    ReqlDatum, ReqlString,
+    ReqlDatum)
+@reql_one_two(170, bracket,
   ReqlObject, ReqlString,
   ReqlDatum)
-@reql_one_two(170, bracket,
-  ReqlDatum, ReqlString,
-  ReqlDatum)
+
 
 # OBSOLETE_GROUPED_MAPREDUCE = 46;
 

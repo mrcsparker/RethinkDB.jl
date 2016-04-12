@@ -79,7 +79,7 @@ function do_ast()
       r.func0(
         r.row("name") |> d -> r.eq(d, "William Adama")
       )
-    ) |> parse_ast |> JSON.json |> println
+    ) |> to_ast |> JSON.json |> println
 
   #=
   r.table("marvel").get("IronMan").bracket("firstAppearance")
@@ -130,49 +130,77 @@ function isreql(a)
 end
 
 #=
-RethinkDB.ReqlSequence(39,
-  Any[RethinkDB.ReqlSequence(-1,RethinkDB.ReqlTable(15,
-    Any[RethinkDB.ReqlString(-1,"authors")])), RethinkDB.ReqlFunction1(-1,RethinkDB.ReqlTop(69,
-      Any[RethinkDB.ReqlArray(2,Any[]),RethinkDB.ReqlTop(-1,RethinkDB.ReqlBool(17,
-        Any[RethinkDB.ReqlDatum(170,
-          Any[RethinkDB.ReqlDatum(13,Any[]),
-        RethinkDB.ReqlString(-1,"name")]),RethinkDB.ReqlDatum(-1,"William Adama")]))]))])
 
+[1,
+  [39,[ // filter
+    [15,["authors"]], // table
+    [69,[ // func
+      [2,[0]], // Array
+      [17,[ // eq
+        [170,[ // Bracket
+          [13,[]], // IMPLICIT_VAR
+        "name"]],
+      "William Adama"]]
+    ]]
+  ]]
+]
 
+RethinkDB.ReqlSequence(39, // push()
+  Any[
+    RethinkDB.ReqlSequence(-1,
+      RethinkDB.ReqlTable(15, Any[RethinkDB.ReqlString(-1, "authors")])
+    ),
+
+    RethinkDB.ReqlFunction1(-1,
+      RethinkDB.ReqlTop(69,
+        Any[
+          RethinkDB.ReqlArray(2,Any[]),
+          RethinkDB.ReqlTop(-1,
+            RethinkDB.ReqlBool(17,
+              Any[
+                RethinkDB.ReqlDatum(170,
+                  Any[
+                    RethinkDB.ReqlDatum(13,Any[]),
+                    RethinkDB.ReqlString(-1, "name")
+                  ]),
+                RethinkDB.ReqlDatum(-1, "William Adama")
+              ]
+            )
+          )
+        ]
+      )
+    )
+  ]
+)
 =#
 
-function parse_ast(ast, a::Array = [])
+function to_ast(ast)
+  local ret = []
+  push!(ret, 1)
+  push!(ret, _to_ast(ast))
+  ret
+end
+
+
+function _to_ast(ast)
 
   if (isarray(ast))
-    local items = []
+    local tmp = []
     for i in ast
-      push!(items, parse_ast(i.value))
+      push!(tmp, _to_ast(i))
     end
-    return items
+    return tmp
   end
-
-  println(":first")
-  println(typeof(ast))
-  println(isreql(ast))
-  println(ast)
-  println("")
 
   if (!isreql(ast))
-    return ast
+    local tmp_not_reql = []
+    push!(tmp_not_reql, ast)
+    return tmp_not_reql
   end
 
-  println(":second")
-  println(typeof(ast))
-  println(isreql(ast))
-  println(ast.op_code)
-  show(ast)
-  println("")
-
   if ast.op_code != -1
-    items = []
-    push!(items, [ast.op_code, parse_ast(ast.value)])
-    return items
+    return [ast.op_code, _to_ast(ast.value)]
   else
-    return parse_ast(ast.value)
+    return _to_ast(ast.value)
   end
 end
